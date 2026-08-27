@@ -85,13 +85,7 @@ export default factories.createCoreController(
 
       const lesson = await strapi.documents("api::lesson.lesson").findOne({
         documentId,
-        populate: {
-          course: {
-            populate: {
-              instructor: true,
-            },
-          },
-        },
+        populate: ["course", "course.instructor"],
       });
 
       if (!lesson) {
@@ -137,13 +131,7 @@ export default factories.createCoreController(
 
       const lesson = await strapi.documents("api::lesson.lesson").findOne({
         documentId,
-        populate: {
-          course: {
-            populate: {
-              instructor: true,
-            },
-          },
-        },
+        populate: ["course", "course.instructor"],
       });
 
       if (!lesson) {

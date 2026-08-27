@@ -98,17 +98,7 @@ export default factories.createCoreController(
         .documents("api::question.question")
         .findOne({
           documentId,
-          populate: {
-            quiz: {
-              populate: {
-                course: {
-                  populate: {
-                    instructor: true,
-                  },
-                },
-              },
-            },
-          },
+          populate: ["quiz", "quiz.course", "quiz.course.instructor"],
         });
 
       if (!question) {
@@ -161,17 +151,7 @@ export default factories.createCoreController(
         .documents("api::question.question")
         .findOne({
           documentId,
-          populate: {
-            quiz: {
-              populate: {
-                course: {
-                  populate: {
-                    instructor: true,
-                  },
-                },
-              },
-            },
-          },
+          populate: ["quiz", "quiz.course", "quiz.course.instructor"],
         });
 
       if (!question) {

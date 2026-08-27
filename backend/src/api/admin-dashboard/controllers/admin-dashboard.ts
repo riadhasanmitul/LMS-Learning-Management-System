@@ -331,12 +331,17 @@ export default factories.createCoreController(
     return ctx.notFound("User not found");
   }
 
+  if (currentUser.blocked) {
+    return ctx.forbidden("Your account has been blocked by an administrator");
+  }
+
   return {
     data: {
       id: currentUser.id,
       documentId: currentUser.documentId,
       username: currentUser.username,
       email: currentUser.email,
+      blocked: currentUser.blocked || false,
       role: currentUser.role
         ? {
             id: currentUser.role.id,

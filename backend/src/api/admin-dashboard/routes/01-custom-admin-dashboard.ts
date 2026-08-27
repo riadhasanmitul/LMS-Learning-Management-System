@@ -40,7 +40,7 @@ export default {
         auth: {},
       },
     },
-    {
+{
   method: "GET",
   path: "/current-user",
   handler: "admin-dashboard.me",
