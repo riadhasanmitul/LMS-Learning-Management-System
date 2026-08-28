@@ -232,12 +232,153 @@ export default factories.createCoreController(
             documentId: courseDocumentId,
           },
         },
+        status: "draft",
         sort: ["order:asc"],
       });
 
       return {
         data: lessons,
       };
+    },
+    async contentManagerLessons(ctx) {
+  const user = ctx.state.user;
+
+  if (!user) {
+    return ctx.unauthorized("Authentication required");
+  }
+
+  const currentUser = await strapi.db
+    .query("plugin::users-permissions.user")
+    .findOne({
+      where: {
+        id: user.id,
+      },
+      populate: {
+        role: true,
+      },
+    });
+
+  if (currentUser?.role?.name !== "Content Manager") {
+    return ctx.forbidden("Content Manager access required");
+  }
+
+  const courseDocumentId = ctx.params.courseDocumentId;
+
+  const course = await strapi
+    .documents("api::course.course")
+    .findOne({
+      documentId: courseDocumentId,
+    });
+
+  if (!course) {
+    return ctx.notFound("Course not found");
+  }
+
+  const lessons = await strapi
+    .documents("api::lesson.lesson")
+    .findMany({
+      filters: {
+        course: {
+          documentId: courseDocumentId,
+        },
+      },
+      status: "draft",
+      sort: ["order:asc"],
+    });
+
+  return {
+    data: lessons,
+  };
+},
+    async publishLesson(ctx) {
+      const user = ctx.state.user;
+
+      if (!user) {
+        return ctx.unauthorized("Authentication required");
+      }
+
+      const currentUser = await strapi.db
+        .query("plugin::users-permissions.user")
+        .findOne({
+          where: { id: user.id },
+          populate: { role: true },
+        });
+
+      const role = currentUser?.role?.name;
+
+      if (
+        role !== "Admin" &&
+        role !== "Content Manager" &&
+        role !== "Instructor"
+      ) {
+        return ctx.forbidden("You cannot publish lessons");
+      }
+
+      const documentId = ctx.params.lessonDocumentId;
+
+      const lesson = await strapi.documents("api::lesson.lesson").findOne({
+        documentId,
+        populate: ["course", "course.instructor"],
+      });
+
+      if (!lesson) {
+        return ctx.notFound("Lesson not found");
+      }
+
+      if (role === "Instructor" && lesson.course?.instructor?.id !== user.id) {
+        return ctx.forbidden("You can only publish lessons in your own courses");
+      }
+
+      const published = await strapi.documents("api::lesson.lesson").publish({
+        documentId,
+      });
+
+      return { data: published };
+    },
+    async unpublishLesson(ctx) {
+      const user = ctx.state.user;
+
+      if (!user) {
+        return ctx.unauthorized("Authentication required");
+      }
+
+      const currentUser = await strapi.db
+        .query("plugin::users-permissions.user")
+        .findOne({
+          where: { id: user.id },
+          populate: { role: true },
+        });
+
+      const role = currentUser?.role?.name;
+
+      if (
+        role !== "Admin" &&
+        role !== "Content Manager" &&
+        role !== "Instructor"
+      ) {
+        return ctx.forbidden("You cannot unpublish lessons");
+      }
+
+      const documentId = ctx.params.lessonDocumentId;
+
+      const lesson = await strapi.documents("api::lesson.lesson").findOne({
+        documentId,
+        populate: ["course", "course.instructor"],
+      });
+
+      if (!lesson) {
+        return ctx.notFound("Lesson not found");
+      }
+
+      if (role === "Instructor" && lesson.course?.instructor?.id !== user.id) {
+        return ctx.forbidden("You can only unpublish lessons in your own courses");
+      }
+
+      const unpublished = await strapi.documents("api::lesson.lesson").unpublish({
+        documentId,
+      });
+
+      return { data: unpublished };
     },
   }),
 );

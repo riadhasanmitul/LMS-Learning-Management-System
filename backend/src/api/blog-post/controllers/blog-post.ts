@@ -3,6 +3,98 @@ import { factories } from "@strapi/strapi";
 export default factories.createCoreController(
   "api::blog-post.blog-post",
   ({ strapi }) => ({
+    async find(ctx) {
+      const user = ctx.state.user;
+
+      if (!user) {
+        return ctx.unauthorized("Authentication required");
+      }
+
+      const currentUser = await strapi.db
+        .query("plugin::users-permissions.user")
+        .findOne({
+          where: {
+            id: user.id,
+          },
+          populate: {
+            role: true,
+          },
+        });
+
+      const role = currentUser?.role?.name;
+
+      if (role !== "Admin" && role !== "Content Manager") {
+        return ctx.forbidden(
+          "Only Admin or Content Manager can manage blog posts",
+        );
+      }
+
+      const posts = await strapi
+        .documents("api::blog-post.blog-post")
+        .findMany({
+          status: "draft",
+          populate: {
+            author: {
+              fields: ["id", "documentId", "name"],
+            },
+          },
+          sort: ["createdAt:desc"],
+        });
+
+      return {
+        data: posts,
+      };
+    },
+
+    async findOne(ctx) {
+      const user = ctx.state.user;
+
+      if (!user) {
+        return ctx.unauthorized("Authentication required");
+      }
+
+      const currentUser = await strapi.db
+        .query("plugin::users-permissions.user")
+        .findOne({
+          where: {
+            id: user.id,
+          },
+          populate: {
+            role: true,
+          },
+        });
+
+      const role = currentUser?.role?.name;
+
+      if (role !== "Admin" && role !== "Content Manager") {
+        return ctx.forbidden(
+          "Only Admin or Content Manager can view blog posts for editing",
+        );
+      }
+
+      const documentId = ctx.params.id;
+
+      const post = await strapi
+        .documents("api::blog-post.blog-post")
+        .findOne({
+          documentId,
+          status: "draft",
+          populate: {
+            author: {
+              fields: ["id", "documentId", "name"],
+            },
+          },
+        });
+
+      if (!post) {
+        return ctx.notFound("Blog post not found");
+      }
+
+      return {
+        data: post,
+      };
+    },
+
     async create(ctx) {
       const user = ctx.state.user;
 
@@ -41,17 +133,13 @@ export default factories.createCoreController(
       }
 
       const publicationStatus: "draft" | "published" =
-        body.publicationStatus === "published"
-          ? "published"
-          : "draft";
+        body.publicationStatus === "published" ? "published" : "draft";
 
-      let author = await strapi.db
-        .query("api::author.author")
-        .findOne({
-          where: {
-            email: currentUser.email,
-          },
-        });
+      let author = await strapi.db.query("api::author.author").findOne({
+        where: {
+          email: currentUser.email,
+        },
+      });
 
       if (!author) {
         author = await strapi.documents("api::author.author").create({
@@ -62,30 +150,28 @@ export default factories.createCoreController(
         });
       }
 
-      const post = await strapi
-        .documents("api::blog-post.blog-post")
-        .create({
-          data: {
-            title: body.title,
-            body: body.body,
-            coverImage: body.coverImage ?? null,
-            publicationStatus,
-            author: author.documentId,
-          },
-        });
+      const post = await strapi.documents("api::blog-post.blog-post").create({
+        data: {
+          title: body.title,
+          body: body.body,
+          coverImage: body.coverImage ?? null,
+          publicationStatus,
+          author: author.documentId,
+        },
+        status: "draft",
+      });
 
       if (publicationStatus === "published") {
-        await strapi
-          .documents("api::blog-post.blog-post")
-          .publish({
-            documentId: post.documentId,
-          });
+        await strapi.documents("api::blog-post.blog-post").publish({
+          documentId: post.documentId,
+        });
       }
 
       const result = await strapi
         .documents("api::blog-post.blog-post")
         .findOne({
           documentId: post.documentId,
+          status: "draft",
           populate: {
             author: {
               fields: ["id", "documentId", "name"],
@@ -135,6 +221,7 @@ export default factories.createCoreController(
         .documents("api::blog-post.blog-post")
         .findOne({
           documentId,
+          status: "draft",
         });
 
       if (!existingPost) {
@@ -156,13 +243,10 @@ export default factories.createCoreController(
         .documents("api::blog-post.blog-post")
         .update({
           documentId,
+          status: "draft",
           data: {
-            ...(body.title !== undefined
-              ? { title: body.title }
-              : {}),
-            ...(body.body !== undefined
-              ? { body: body.body }
-              : {}),
+            ...(body.title !== undefined ? { title: body.title } : {}),
+            ...(body.body !== undefined ? { body: body.body } : {}),
             ...(body.coverImage !== undefined
               ? { coverImage: body.coverImage }
               : {}),
@@ -175,23 +259,20 @@ export default factories.createCoreController(
       }
 
       if (publicationStatus === "published") {
-        await strapi
-          .documents("api::blog-post.blog-post")
-          .publish({
-            documentId,
-          });
+        await strapi.documents("api::blog-post.blog-post").publish({
+          documentId,
+        });
       } else {
-        await strapi
-          .documents("api::blog-post.blog-post")
-          .unpublish({
-            documentId,
-          });
+        await strapi.documents("api::blog-post.blog-post").unpublish({
+          documentId,
+        });
       }
 
       const result = await strapi
         .documents("api::blog-post.blog-post")
         .findOne({
           documentId: updatedPost.documentId,
+          status: "draft",
           populate: {
             author: {
               fields: ["id", "documentId", "name"],
@@ -241,17 +322,16 @@ export default factories.createCoreController(
         .documents("api::blog-post.blog-post")
         .findOne({
           documentId,
+          status: "draft",
         });
 
       if (!existingPost) {
         return ctx.notFound("Blog post not found");
       }
 
-      const result = await strapi
-        .documents("api::blog-post.blog-post")
-        .delete({
-          documentId,
-        });
+      const result = await strapi.documents("api::blog-post.blog-post").delete({
+        documentId,
+      });
 
       return {
         data: result,
@@ -281,16 +361,14 @@ export default factories.createCoreController(
     async publishedOne(ctx) {
       const documentId = ctx.params.documentId;
 
-      const post = await strapi
-        .documents("api::blog-post.blog-post")
-        .findOne({
-          documentId,
-          populate: {
-            author: {
-              fields: ["id", "documentId", "name"],
-            },
+      const post = await strapi.documents("api::blog-post.blog-post").findOne({
+        documentId,
+        populate: {
+          author: {
+            fields: ["id", "documentId", "name"],
           },
-        });
+        },
+      });
 
       if (!post || post.publicationStatus !== "published") {
         return ctx.notFound("Published blog post not found");

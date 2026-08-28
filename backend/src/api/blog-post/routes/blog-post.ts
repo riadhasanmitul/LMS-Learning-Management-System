@@ -5,7 +5,7 @@ export default {
       path: "/blog-posts/published",
       handler: "api::blog-post.blog-post.published",
       config: {
-        auth: {},
+        auth: false,
       },
     },
     {
@@ -13,7 +13,7 @@ export default {
       path: "/blog-posts/published/:documentId",
       handler: "api::blog-post.blog-post.publishedOne",
       config: {
-        auth: {},
+        auth: false,
       },
     },
     {

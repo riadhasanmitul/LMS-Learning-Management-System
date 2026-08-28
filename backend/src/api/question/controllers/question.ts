@@ -169,5 +169,60 @@ export default factories.createCoreController(
 
       return await super.delete(ctx);
     },
+    async contentManagerQuestions(ctx) {
+  const user = ctx.state.user;
+
+  if (!user) {
+    return ctx.unauthorized("Authentication required");
+  }
+
+  const currentUser = await strapi.db
+    .query("plugin::users-permissions.user")
+    .findOne({
+      where: {
+        id: user.id,
+      },
+      populate: {
+        role: true,
+      },
+    });
+
+  if (currentUser?.role?.name !== "Content Manager") {
+    return ctx.forbidden("Content Manager access required");
+  }
+
+  const quizDocumentId = ctx.params.quizDocumentId;
+
+  const quiz = await strapi
+    .documents("api::quiz.quiz")
+    .findOne({
+      documentId: quizDocumentId,
+    });
+
+  if (!quiz) {
+    return ctx.notFound("Quiz not found");
+  }
+
+  const questions = await strapi
+    .documents("api::question.question")
+    .findMany({
+      filters: {
+        quiz: {
+          documentId: quizDocumentId,
+        },
+      },
+      sort: ["createdAt:asc"],
+    });
+
+  return {
+    data: questions.map((item) => ({
+      id: item.id,
+      documentId: item.documentId,
+      question: item.question,
+      options: item.options,
+      correctAnswer: item.correctAnswer,
+    })),
+  };
+},
   }),
 );
