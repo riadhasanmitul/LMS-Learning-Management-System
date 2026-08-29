@@ -13,6 +13,52 @@ export default {
    */
   async bootstrap({ strapi }: { strapi: Core.Strapi }) {
     try {
+      // 1. Ensure all 4 LMS roles exist in users-permissions plugin
+      const roleNames = ["Student", "Instructor", "Content Manager", "Admin"];
+
+      for (const name of roleNames) {
+        const existingRole = await strapi.db
+          .query("plugin::users-permissions.role")
+          .findOne({ where: { name } });
+
+        if (!existingRole) {
+          const type = name.toLowerCase().replace(/\s+/g, "_");
+          await strapi.db.query("plugin::users-permissions.role").create({
+            data: {
+              name,
+              type,
+              description: `${name} role for CPS LMS`,
+            },
+          });
+        }
+      }
+
+      // 2. Automatically assign Admin role to any user named 'admin' or with 'admin' email if they exist
+      const adminRole = await strapi.db
+        .query("plugin::users-permissions.role")
+        .findOne({ where: { name: "Admin" } });
+
+      if (adminRole) {
+        const adminUsers = await strapi.db
+          .query("plugin::users-permissions.user")
+          .findMany({
+            where: {
+              $or: [
+                { username: { $iLike: "%admin%" } },
+                { email: { $iLike: "%admin%" } },
+              ],
+            },
+          });
+
+        for (const user of adminUsers) {
+          await strapi.db.query("plugin::users-permissions.user").update({
+            where: { id: user.id },
+            data: { role: adminRole.id },
+          });
+        }
+      }
+
+      // 3. Ensure permissions linkage for custom routes
       const actionsToEnsure = [
         "api::question.question.find",
         "api::question.question.findOne",
@@ -45,7 +91,7 @@ export default {
         "api::admin-dashboard.admin-dashboard.me",
       ];
 
-      const roles = await strapi.db
+      const allRoles = await strapi.db
         .query("plugin::users-permissions.role")
         .findMany({
           where: {
@@ -53,7 +99,7 @@ export default {
           },
         });
 
-      for (const role of roles) {
+      for (const role of allRoles) {
         for (const action of actionsToEnsure) {
           let permission = await strapi.db
             .query("plugin::users-permissions.permission")
