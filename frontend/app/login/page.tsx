@@ -252,33 +252,6 @@ export default function LoginPage() {
                     />
                   </div>
 
-                  <div>
-                    <label
-                      htmlFor="roleSelect"
-                      className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300"
-                    >
-                      Account Role
-                    </label>
-                    <select
-                      id="roleSelect"
-                      value={selectedRole}
-                      onChange={(e) =>
-                        setSelectedRole(
-                          e.target.value as
-                            | "Student"
-                            | "Instructor"
-                            | "Content Manager"
-                            | "Admin"
-                        )
-                      }
-                      className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
-                    >
-                      <option value="Student">Student</option>
-                      <option value="Instructor">Instructor</option>
-                      <option value="Content Manager">Content Manager</option>
-                      <option value="Admin">Admin</option>
-                    </select>
-                  </div>
                 </>
               )}
 
