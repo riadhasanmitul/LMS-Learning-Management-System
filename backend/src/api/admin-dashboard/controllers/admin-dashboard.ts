@@ -472,16 +472,52 @@ export default factories.createCoreController(
         let targetRoleName = "";
         if (lowerName.includes("admin") || lowerEmail.includes("admin")) {
           targetRoleName = "Admin";
-        } else if (lowerName.includes("content") || lowerEmail.includes("content")) {
+        } else if (
+          lowerName.includes("content") ||
+          lowerEmail.includes("content") ||
+          lowerName.includes("cm")
+        ) {
           targetRoleName = "Content Manager";
-        } else if (lowerName.includes("instructor") || lowerEmail.includes("instructor")) {
+        } else if (
+          lowerName.includes("instructor") ||
+          lowerEmail.includes("instructor") ||
+          lowerName.includes("teacher")
+        ) {
           targetRoleName = "Instructor";
         }
 
         if (targetRoleName) {
-          const targetRole = await strapi.db
+          const allRoles = await strapi.db
             .query("plugin::users-permissions.role")
-            .findOne({ where: { name: targetRoleName } });
+            .findMany({});
+
+          let targetRole = allRoles.find((r: any) => {
+            const rName = (r.name || "").toLowerCase();
+            const rType = (r.type || "").toLowerCase();
+            const search = targetRoleName.toLowerCase();
+            return (
+              rName.includes(search) ||
+              rType.includes(search) ||
+              (search.includes("content") &&
+                (rName.includes("content") || rType.includes("content"))) ||
+              (search.includes("instructor") &&
+                (rName.includes("instructor") || rType.includes("instructor"))) ||
+              (search.includes("admin") &&
+                (rName.includes("admin") || rType.includes("admin")))
+            );
+          });
+
+          if (!targetRole) {
+            targetRole = await strapi.db
+              .query("plugin::users-permissions.role")
+              .create({
+                data: {
+                  name: targetRoleName,
+                  description: `${targetRoleName} role`,
+                  type: targetRoleName.toLowerCase().replace(/\s+/g, "_"),
+                },
+              });
+          }
 
           if (targetRole) {
             await strapi.db.query("plugin::users-permissions.user").update({
