@@ -409,10 +409,19 @@ export default factories.createCoreController(
 
       const documentId = ctx.params.lessonDocumentId;
 
-      const lesson = await strapi.documents("api::lesson.lesson").findOne({
+      let lesson = await strapi.documents("api::lesson.lesson").findOne({
         documentId,
         populate: ["course", "course.instructor"],
+        status: "draft",
       });
+
+      if (!lesson) {
+        lesson = await strapi.documents("api::lesson.lesson").findOne({
+          documentId,
+          populate: ["course", "course.instructor"],
+          status: "published",
+        });
+      }
 
       if (!lesson) {
         return ctx.notFound("Lesson not found");
@@ -448,10 +457,19 @@ export default factories.createCoreController(
 
       const documentId = ctx.params.lessonDocumentId;
 
-      const lesson = await strapi.documents("api::lesson.lesson").findOne({
+      let lesson = await strapi.documents("api::lesson.lesson").findOne({
         documentId,
         populate: ["course", "course.instructor"],
+        status: "draft",
       });
+
+      if (!lesson) {
+        lesson = await strapi.documents("api::lesson.lesson").findOne({
+          documentId,
+          populate: ["course", "course.instructor"],
+          status: "published",
+        });
+      }
 
       if (!lesson) {
         return ctx.notFound("Lesson not found");

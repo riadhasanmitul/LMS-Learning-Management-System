@@ -350,10 +350,19 @@ export default factories.createCoreController(
 
       const documentId = ctx.params.quizDocumentId;
 
-      const quiz = await strapi.documents("api::quiz.quiz").findOne({
+      let quiz = await strapi.documents("api::quiz.quiz").findOne({
         documentId,
         populate: ["course", "course.instructor"],
+        status: "draft",
       });
+
+      if (!quiz) {
+        quiz = await strapi.documents("api::quiz.quiz").findOne({
+          documentId,
+          populate: ["course", "course.instructor"],
+          status: "published",
+        });
+      }
 
       if (!quiz) {
         return ctx.notFound("Quiz not found");
@@ -389,10 +398,19 @@ export default factories.createCoreController(
 
       const documentId = ctx.params.quizDocumentId;
 
-      const quiz = await strapi.documents("api::quiz.quiz").findOne({
+      let quiz = await strapi.documents("api::quiz.quiz").findOne({
         documentId,
         populate: ["course", "course.instructor"],
+        status: "draft",
       });
+
+      if (!quiz) {
+        quiz = await strapi.documents("api::quiz.quiz").findOne({
+          documentId,
+          populate: ["course", "course.instructor"],
+          status: "published",
+        });
+      }
 
       if (!quiz) {
         return ctx.notFound("Quiz not found");
