@@ -42,6 +42,21 @@ export default function LessonViewerPage() {
         );
 
         setLesson(result);
+
+        try {
+          const progressRes = await axios.get<{
+            data: Array<{ lesson?: { documentId: string }; completed: boolean }>;
+          }>("/api/lesson-progresses/my-progress", {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          const isComp = (progressRes.data.data || []).some(
+            (p) => p.lesson?.documentId === lessonDocumentId && p.completed,
+          );
+          setCompleted(isComp);
+        } catch {
+          // ignore progress error
+        }
       } catch (err) {
         if (
           axios.isAxiosError(err) &&
@@ -81,9 +96,13 @@ export default function LessonViewerPage() {
       );
 
       setCompleted(true);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(err);
-      setError("Unable to save your progress.");
+      if (axios.isAxiosError(err) && err.response?.data?.error?.message) {
+        setError(err.response.data.error.message);
+      } else {
+        setError("Unable to save your progress.");
+      }
     } finally {
       setSaving(false);
     }

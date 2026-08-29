@@ -70,12 +70,23 @@ export default factories.createCoreController(
         return ctx.badRequest("Lesson is required");
       }
 
-      const lessonRecord = await strapi
+      let lessonRecord = await strapi
         .documents("api::lesson.lesson")
         .findOne({
           documentId: lesson,
           populate: ["course"],
+          status: "draft",
         });
+
+      if (!lessonRecord) {
+        lessonRecord = await strapi
+          .documents("api::lesson.lesson")
+          .findOne({
+            documentId: lesson,
+            populate: ["course"],
+            status: "published",
+          });
+      }
 
       if (!lessonRecord) {
         return ctx.notFound("Lesson not found");
@@ -87,24 +98,31 @@ export default factories.createCoreController(
         return ctx.badRequest("Lesson is not assigned to a course");
       }
 
-      // Check whether the student is enrolled in the course
-      const enrollments = await strapi
-        .documents("api::enrollment.enrollment")
-        .findMany({
-          filters: {
-            student: {
-              id: user.id,
-            },
-            course: {
-              documentId: courseDocumentId,
-            },
-          },
-        });
+      const roleName = user.role?.name || "";
+      const isManagement =
+        roleName.toLowerCase().includes("admin") ||
+        roleName.toLowerCase().includes("content") ||
+        roleName.toLowerCase().includes("instructor");
 
-      if (enrollments.length === 0) {
-        return ctx.forbidden(
-          "You are not enrolled in this course",
-        );
+      if (!isManagement) {
+        const enrollments = await strapi
+          .documents("api::enrollment.enrollment")
+          .findMany({
+            filters: {
+              student: {
+                id: user.id,
+              },
+              course: {
+                documentId: courseDocumentId,
+              },
+            },
+          });
+
+        if (enrollments.length === 0) {
+          return ctx.forbidden(
+            "You are not enrolled in this course",
+          );
+        }
       }
 
       // Check whether progress already exists
@@ -121,28 +139,25 @@ export default factories.createCoreController(
 
       // Update existing progress
       if (existingProgress.length > 0) {
+        const updateData: Record<string, any> = {
+          completed: completed ?? true,
+        };
+        if (completed !== false) {
+          updateData.completedAt = new Date();
+        }
+
         const progress = await strapi
           .documents("api::lesson-progress.lesson-progress")
           .update({
             documentId: existingProgress[0].documentId,
-            data: {
-              completed: completed ?? true,
-              ...(completed === false
-                ? { completedAt: "" }
-                : { completedAt: new Date() }),
-            },
+            data: updateData as any,
           });
 
         return { data: progress };
       }
 
       // Create new progress
-      const progressData: {
-        completed: boolean;
-        student: number;
-        lesson: string;
-        completedAt?: Date;
-      } = {
+      const progressData: Record<string, any> = {
         completed: completed ?? true,
         student: user.id,
         lesson,
@@ -155,7 +170,7 @@ export default factories.createCoreController(
       const progress = await strapi
         .documents("api::lesson-progress.lesson-progress")
         .create({
-          data: progressData,
+          data: progressData as any,
         });
 
       return { data: progress };
