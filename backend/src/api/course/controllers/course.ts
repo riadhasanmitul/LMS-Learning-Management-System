@@ -383,30 +383,33 @@ export default factories.createCoreController(
           },
         });
 
-      const lessonDocumentIds = lessons.map(
-        (lesson) => lesson.documentId,
-      );
+      const totalLessons = lessons.length;
+      let completedLessons = 0;
 
-      const progress = await strapi
-        .documents("api::lesson-progress.lesson-progress")
-        .findMany({
-          filters: {
-            student: {
-              id: user.id,
-            },
-            lesson: {
-              documentId: {
-                $in: lessonDocumentIds,
+      if (totalLessons > 0) {
+        const lessonDocumentIds = lessons.map(
+          (lesson) => lesson.documentId,
+        );
+
+        const progress = await strapi
+          .documents("api::lesson-progress.lesson-progress")
+          .findMany({
+            filters: {
+              student: {
+                id: user.id,
+              },
+              lesson: {
+                documentId: {
+                  $in: lessonDocumentIds,
+                },
               },
             },
-          },
-        });
+          });
 
-      const totalLessons = lessons.length;
-
-      const completedLessons = progress.filter(
-        (item) => item.completed === true,
-      ).length;
+        completedLessons = progress.filter(
+          (item) => item.completed === true,
+        ).length;
+      }
 
       const progressPercentage =
         totalLessons === 0

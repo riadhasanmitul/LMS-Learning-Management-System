@@ -107,6 +107,7 @@ export default factories.createCoreController(
             course: courseDocumentId,
             student: user.id,
           },
+          status: "published",
         });
 
       return {

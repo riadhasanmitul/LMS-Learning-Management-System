@@ -17,6 +17,7 @@ import {
   type Progress,
   type CourseQuiz,
 } from "@/services/student";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export default function CourseDetailsPage() {
   const router = useRouter();
@@ -46,15 +47,20 @@ export default function CourseDetailsPage() {
 
     async function loadCourse() {
       try {
-        const [courses, myCourses] = await Promise.all([
+        const [coursesResult, myCoursesResult] = await Promise.allSettled([
           getCourses(token),
           getMyCourses(token),
         ]);
 
+        const courses =
+          coursesResult.status === "fulfilled" ? coursesResult.value : [];
+        const myCourses =
+          myCoursesResult.status === "fulfilled" ? myCoursesResult.value : [];
+
         const foundCourse =
-          courses.find(
-            (item) => item.documentId === courseDocumentId,
-          ) ?? null;
+          courses.find((item) => item.documentId === courseDocumentId) ??
+          myCourses.find((item) => item.documentId === courseDocumentId) ??
+          null;
 
         if (!foundCourse) {
           setError("Course not found.");
@@ -70,16 +76,19 @@ export default function CourseDetailsPage() {
         setIsEnrolled(enrolled);
 
         if (enrolled) {
-          const [courseLessons, courseProgress, courseQuizzes] =
-            await Promise.all([
+          const [lessonsResult, progressResult, quizzesResult] =
+            await Promise.allSettled([
               getCourseLessons(token, courseDocumentId),
               getCourseProgress(token, courseDocumentId),
               getCourseQuizzes(token, courseDocumentId),
             ]);
 
-          setLessons(courseLessons);
-          setProgress(courseProgress);
-          setQuizzes(courseQuizzes);
+          if (lessonsResult.status === "fulfilled")
+            setLessons(lessonsResult.value);
+          if (progressResult.status === "fulfilled")
+            setProgress(progressResult.value);
+          if (quizzesResult.status === "fulfilled")
+            setQuizzes(quizzesResult.value);
         }
       } catch (err) {
         console.error(err);
@@ -110,16 +119,18 @@ export default function CourseDetailsPage() {
 
       setIsEnrolled(true);
 
-      const [courseLessons, courseProgress, courseQuizzes] =
-        await Promise.all([
+      const [lessonsResult, progressResult, quizzesResult] =
+        await Promise.allSettled([
           getCourseLessons(token, courseDocumentId),
           getCourseProgress(token, courseDocumentId),
           getCourseQuizzes(token, courseDocumentId),
         ]);
 
-      setLessons(courseLessons);
-      setProgress(courseProgress);
-      setQuizzes(courseQuizzes);
+      if (lessonsResult.status === "fulfilled") setLessons(lessonsResult.value);
+      if (progressResult.status === "fulfilled")
+        setProgress(progressResult.value);
+      if (quizzesResult.status === "fulfilled")
+        setQuizzes(quizzesResult.value);
     } catch (err) {
       console.error(err);
       setError("Unable to enroll in this course.");
@@ -130,12 +141,12 @@ export default function CourseDetailsPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-slate-50">
+      <main className="min-h-screen bg-slate-50 dark:bg-slate-950">
         <div className="mx-auto max-w-6xl px-6 py-10">
           <div className="animate-pulse space-y-6">
-            <div className="h-8 w-40 rounded bg-slate-200" />
-            <div className="h-72 rounded-3xl bg-slate-200" />
-            <div className="h-48 rounded-2xl bg-slate-200" />
+            <div className="h-8 w-40 rounded bg-slate-200 dark:bg-slate-800" />
+            <div className="h-72 rounded-3xl bg-slate-200 dark:bg-slate-800" />
+            <div className="h-48 rounded-2xl bg-slate-200 dark:bg-slate-800" />
           </div>
         </div>
       </main>
@@ -144,13 +155,13 @@ export default function CourseDetailsPage() {
 
   if (error && !course) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-50 px-6">
+      <main className="flex min-h-screen items-center justify-center bg-slate-50 px-6 dark:bg-slate-950">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-slate-900">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
             Course unavailable
           </h1>
 
-          <p className="mt-2 text-sm text-slate-500">
+          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
             {error}
           </p>
 
@@ -170,9 +181,9 @@ export default function CourseDetailsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50">
+    <main className="min-h-screen bg-slate-50 transition-colors dark:bg-slate-950">
       {/* Header */}
-      <header className="border-b border-slate-200 bg-white">
+      <header className="border-b border-slate-200 bg-white transition-colors dark:border-slate-800 dark:bg-slate-900">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
           <Link
             href="/student"
@@ -182,17 +193,20 @@ export default function CourseDetailsPage() {
               C
             </div>
 
-            <div className="text-base font-bold text-slate-900">
+            <div className="text-base font-bold text-slate-900 dark:text-white">
               CPS LMS
             </div>
           </Link>
 
-          <Link
-            href="/student"
-            className="text-sm font-medium text-slate-500 hover:text-slate-900"
-          >
-            ← Dashboard
-          </Link>
+          <div className="flex items-center gap-4">
+            <ThemeToggle />
+            <Link
+              href="/student"
+              className="text-sm font-medium text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+            >
+              ← Dashboard
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -218,7 +232,7 @@ export default function CourseDetailsPage() {
               </h1>
 
               <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-400 md:text-base">
-                {course.description}
+                {course.description || "No description provided."}
               </p>
 
               <div className="mt-7 flex flex-wrap gap-3">
@@ -269,7 +283,7 @@ export default function CourseDetailsPage() {
         </section>
 
         {error && course && (
-          <div className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+          <div className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-900/50 dark:bg-red-950/50 dark:text-red-300">
             {error}
           </div>
         )}
@@ -296,24 +310,24 @@ export default function CourseDetailsPage() {
 
         {/* Progress */}
         {isEnrolled && progress && (
-          <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-6">
+          <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-bold text-slate-900">
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white">
                   Your Progress
                 </h2>
 
-                <p className="mt-1 text-sm text-slate-500">
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                   Keep going — you&#39;re making progress.
                 </p>
               </div>
 
-              <span className="text-2xl font-bold text-blue-600">
+              <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                 {progress.progressPercentage}%
               </span>
             </div>
 
-            <div className="mt-5 h-3 overflow-hidden rounded-full bg-slate-100">
+            <div className="mt-5 h-3 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
               <div
                 className="h-full rounded-full bg-blue-600 transition-all"
                 style={{
@@ -328,24 +342,24 @@ export default function CourseDetailsPage() {
         {isEnrolled && (
           <section id="lessons" className="mt-8 pb-10">
             <div className="mb-5">
-              <h2 className="text-2xl font-bold text-slate-900">
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
                 Course Lessons
               </h2>
 
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                 Work through the lessons in order.
               </p>
             </div>
 
             {lessons.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center">
+              <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center dark:border-slate-800 dark:bg-slate-900">
                 <div className="text-3xl">📖</div>
 
-                <h3 className="mt-3 font-semibold text-slate-900">
+                <h3 className="mt-3 font-semibold text-slate-900 dark:text-white">
                   No lessons yet
                 </h3>
 
-                <p className="mt-2 text-sm text-slate-500">
+                <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
                   This course does not have any lessons yet.
                 </p>
               </div>
@@ -355,23 +369,23 @@ export default function CourseDetailsPage() {
                   <Link
                     key={lesson.documentId}
                     href={`/student/lessons/${lesson.documentId}`}
-                    className="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 transition hover:border-blue-200 hover:shadow-sm"
+                    className="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 transition hover:border-blue-200 hover:shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-900"
                   >
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-sm font-bold text-slate-500 group-hover:bg-blue-50 group-hover:text-blue-600">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-sm font-bold text-slate-500 group-hover:bg-blue-50 group-hover:text-blue-600 dark:bg-slate-800 dark:text-slate-400 dark:group-hover:bg-blue-950/40 dark:group-hover:text-blue-400">
                       {index + 1}
                     </div>
 
                     <div className="min-w-0 flex-1">
-                      <h3 className="font-semibold text-slate-900 group-hover:text-blue-600">
+                      <h3 className="font-semibold text-slate-900 group-hover:text-blue-600 dark:text-white dark:group-hover:text-blue-400">
                         {lesson.title}
                       </h3>
 
-                      <p className="mt-1 text-xs text-slate-400">
+                      <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
                         Lesson {index + 1}
                       </p>
                     </div>
 
-                    <span className="text-sm font-semibold text-blue-600">
+                    <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">
                       Open →
                     </span>
                   </Link>
@@ -385,11 +399,11 @@ export default function CourseDetailsPage() {
         {isEnrolled && quizzes.length > 0 && (
           <section className="mt-8 pb-10">
             <div className="mb-5">
-              <h2 className="text-2xl font-bold text-slate-900">
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
                 Assessments
               </h2>
 
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                 Test your knowledge with the course quizzes.
               </p>
             </div>
@@ -399,23 +413,23 @@ export default function CourseDetailsPage() {
                 <Link
                   key={quiz.documentId}
                   href={`/student/quizzes/${quiz.documentId}`}
-                  className="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 transition hover:border-blue-200 hover:shadow-sm"
+                  className="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 transition hover:border-blue-200 hover:shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-900"
                 >
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-lg text-violet-600">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-lg text-violet-600 dark:bg-violet-950/40 dark:text-violet-300">
                     ✓
                   </div>
 
                   <div className="min-w-0 flex-1">
-                    <h3 className="font-semibold text-slate-900 group-hover:text-blue-600">
+                    <h3 className="font-semibold text-slate-900 group-hover:text-blue-600 dark:text-white dark:group-hover:text-blue-400">
                       {quiz.title}
                     </h3>
 
-                    <p className="mt-1 text-xs text-slate-400">
+                    <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
                       Course assessment
                     </p>
                   </div>
 
-                  <span className="text-sm font-semibold text-blue-600">
+                  <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">
                     Take Quiz →
                   </span>
                 </Link>
@@ -436,10 +450,10 @@ function InfoCard({
   value: string;
 }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-6">
-      <p className="text-sm text-slate-500">{label}</p>
+    <div className="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+      <p className="text-sm text-slate-500 dark:text-slate-400">{label}</p>
 
-      <p className="mt-2 text-3xl font-bold text-slate-900">
+      <p className="mt-2 text-3xl font-bold text-slate-900 dark:text-white">
         {value}
       </p>
     </div>
