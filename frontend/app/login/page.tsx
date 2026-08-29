@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { getCurrentUser, login, register } from "@/services/auth";
 import { setAuthToken } from "@/lib/api";
 import axios from "axios";
-import ThemeToggle from "@/components/ThemeToggle";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export default function LoginPage() {
   const router = useRouter();

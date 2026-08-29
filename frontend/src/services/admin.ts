@@ -2,6 +2,12 @@ import { api } from "@/lib/api";
 
 export interface AdminStats {
   users: number;
+  usersByRole?: {
+    Student: number;
+    Instructor: number;
+    "Content Manager": number;
+    Admin: number;
+  };
   courses: number;
   lessons: number;
   enrollments: number;

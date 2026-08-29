@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { getToken, logout } from "@/lib/auth";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import {
   getAdminStats,
   type AdminStats,
@@ -63,18 +64,14 @@ export default function AdminAnalyticsPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-slate-50">
+      <main className="min-h-screen bg-slate-50 dark:bg-slate-950">
         <div className="mx-auto max-w-7xl px-6 py-10">
           <div className="animate-pulse space-y-6">
-            <div className="h-36 rounded-3xl bg-slate-200" />
-
+            <div className="h-36 rounded-3xl bg-slate-200 dark:bg-slate-800" />
             <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-              <div className="h-40 rounded-2xl bg-slate-200" />
-              <div className="h-40 rounded-2xl bg-slate-200" />
-              <div className="h-40 rounded-2xl bg-slate-200" />
-              <div className="h-40 rounded-2xl bg-slate-200" />
-              <div className="h-40 rounded-2xl bg-slate-200" />
-              <div className="h-40 rounded-2xl bg-slate-200" />
+              <div className="h-40 rounded-2xl bg-slate-200 dark:bg-slate-800" />
+              <div className="h-40 rounded-2xl bg-slate-200 dark:bg-slate-800" />
+              <div className="h-40 rounded-2xl bg-slate-200 dark:bg-slate-800" />
             </div>
           </div>
         </div>
@@ -84,13 +81,13 @@ export default function AdminAnalyticsPage() {
 
   if (error) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-50 px-6">
+      <main className="flex min-h-screen items-center justify-center bg-slate-50 px-6 dark:bg-slate-950">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-slate-900">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
             Access Denied
           </h1>
 
-          <p className="mt-2 text-sm text-red-600">
+          <p className="mt-2 text-sm text-red-600 dark:text-red-400">
             {error}
           </p>
 
@@ -110,8 +107,8 @@ export default function AdminAnalyticsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50">
-      <header className="border-b border-slate-200 bg-white">
+    <main className="min-h-screen bg-slate-50 transition-colors dark:bg-slate-950">
+      <header className="border-b border-slate-200 bg-white transition-colors dark:border-slate-800 dark:bg-slate-900">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
           <Link
             href="/admin"
@@ -122,7 +119,7 @@ export default function AdminAnalyticsPage() {
             </div>
 
             <div>
-              <div className="font-bold text-slate-900">
+              <div className="font-bold text-slate-900 dark:text-white">
                 CPS LMS
               </div>
 
@@ -133,9 +130,10 @@ export default function AdminAnalyticsPage() {
           </Link>
 
           <div className="flex items-center gap-4">
+            <ThemeToggle />
             <Link
               href="/admin"
-              className="text-sm font-medium text-slate-500 hover:text-slate-900"
+              className="text-sm font-medium text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
             >
               ← Dashboard
             </Link>
@@ -145,7 +143,7 @@ export default function AdminAnalyticsPage() {
                 logout();
                 router.push("/login");
               }}
-              className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+              className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-800"
             >
               Sign out
             </button>
@@ -160,14 +158,48 @@ export default function AdminAnalyticsPage() {
           </p>
 
           <h1 className="mt-3 text-3xl font-bold text-white md:text-4xl">
-            System Statistics
+            System Statistics & Analytics
           </h1>
 
           <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-400 md:text-base">
-            Overview of activity and content across the CPS LMS
-            platform.
+            Detailed breakdown of users, roles, courses, lessons, and quiz attempts across the platform.
           </p>
         </section>
+
+        {/* Users by Role Analytics */}
+        {stats.usersByRole && (
+          <section className="mt-8">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+              Users Breakdown by Role
+            </h2>
+            <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              <RoleCard
+                role="Students"
+                count={stats.usersByRole.Student || 0}
+                icon="🎓"
+                color="blue"
+              />
+              <RoleCard
+                role="Instructors"
+                count={stats.usersByRole.Instructor || 0}
+                icon="👨‍🏫"
+                color="purple"
+              />
+              <RoleCard
+                role="Content Managers"
+                count={stats.usersByRole["Content Manager"] || 0}
+                icon="📚"
+                color="emerald"
+              />
+              <RoleCard
+                role="Admins"
+                count={stats.usersByRole.Admin || 0}
+                icon="🛡️"
+                color="amber"
+              />
+            </div>
+          </section>
+        )}
 
         <section className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           <AnalyticsCard
@@ -212,48 +244,6 @@ export default function AdminAnalyticsPage() {
             description="Recorded student quiz attempts"
           />
         </section>
-
-        <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 md:p-8">
-          <h2 className="text-xl font-bold text-slate-900">
-            Platform Summary
-          </h2>
-
-          <p className="mt-2 text-sm leading-6 text-slate-500">
-            Current totals retrieved from the LMS backend.
-          </p>
-
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <SummaryRow
-              label="Users"
-              value={stats.users}
-            />
-
-            <SummaryRow
-              label="Courses"
-              value={stats.courses}
-            />
-
-            <SummaryRow
-              label="Lessons"
-              value={stats.lessons}
-            />
-
-            <SummaryRow
-              label="Enrollments"
-              value={stats.enrollments}
-            />
-
-            <SummaryRow
-              label="Quizzes"
-              value={stats.quizzes}
-            />
-
-            <SummaryRow
-              label="Quiz Attempts"
-              value={stats.quizAttempts}
-            />
-          </div>
-        </section>
       </div>
     </main>
   );
@@ -271,40 +261,47 @@ function AnalyticsCard({
   description: string;
 }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-6">
+    <div className="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
       <div className="text-2xl">{icon}</div>
 
-      <p className="mt-5 text-sm font-medium text-slate-500">
+      <p className="mt-5 text-sm font-medium text-slate-500 dark:text-slate-400">
         {label}
       </p>
 
-      <p className="mt-2 text-4xl font-bold text-slate-900">
+      <p className="mt-2 text-4xl font-bold text-slate-900 dark:text-white">
         {value}
       </p>
 
-      <p className="mt-3 text-sm leading-6 text-slate-500">
+      <p className="mt-3 text-sm leading-6 text-slate-500 dark:text-slate-400">
         {description}
       </p>
     </div>
   );
 }
 
-function SummaryRow({
-  label,
-  value,
+function RoleCard({
+  role,
+  count,
+  icon,
+  color,
 }: {
-  label: string;
-  value: number;
+  role: string;
+  count: number;
+  icon: string;
+  color: "blue" | "purple" | "emerald" | "amber";
 }) {
-  return (
-    <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-4">
-      <span className="text-sm font-medium text-slate-600">
-        {label}
-      </span>
+  const colorMap = {
+    blue: "bg-blue-50/80 border-blue-100 text-blue-900 dark:bg-blue-950/30 dark:border-blue-900/40 dark:text-blue-200",
+    purple: "bg-purple-50/80 border-purple-100 text-purple-900 dark:bg-purple-950/30 dark:border-purple-900/40 dark:text-purple-200",
+    emerald: "bg-emerald-50/80 border-emerald-100 text-emerald-900 dark:bg-emerald-950/30 dark:border-emerald-900/40 dark:text-emerald-200",
+    amber: "bg-amber-50/80 border-amber-100 text-amber-900 dark:bg-amber-950/30 dark:border-amber-900/40 dark:text-amber-200",
+  };
 
-      <span className="text-lg font-bold text-slate-900">
-        {value}
-      </span>
+  return (
+    <div className={`rounded-2xl border p-6 ${colorMap[color]}`}>
+      <div className="text-3xl">{icon}</div>
+      <p className="mt-4 text-sm font-semibold uppercase tracking-wider">{role}</p>
+      <p className="mt-1 text-3xl font-extrabold">{count}</p>
     </div>
   );
 }

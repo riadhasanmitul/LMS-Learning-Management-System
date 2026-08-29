@@ -265,8 +265,11 @@ async contentManagerCourses(ctx) {
       },
     });
 
-  if (currentUser?.role?.name !== "Content Manager") {
-    return ctx.forbidden("Content Manager access required");
+  if (
+    currentUser?.role?.name !== "Content Manager" &&
+    currentUser?.role?.name !== "Admin"
+  ) {
+    return ctx.forbidden("Content Manager or Admin access required");
   }
 
   const publishedCourses = await strapi

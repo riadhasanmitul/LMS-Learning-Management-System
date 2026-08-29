@@ -25,20 +25,35 @@ export default factories.createCoreController(
         return ctx.forbidden("Admin access required");
       }
 
-      const users = await strapi.db
+      const allUsers = await strapi.db
         .query("plugin::users-permissions.user")
-        .count();
+        .findMany({
+          populate: {
+            role: true,
+          },
+        });
 
+      const usersByRole = {
+        Student: 0,
+        Instructor: 0,
+        "Content Manager": 0,
+        Admin: 0,
+      };
+
+      for (const u of allUsers) {
+        const roleName = u.role?.name || "Student";
+        if (roleName in usersByRole) {
+          usersByRole[roleName as keyof typeof usersByRole]++;
+        }
+      }
+
+      const users = allUsers.length;
       const courses = await strapi.db.query("api::course.course").count();
-
       const lessons = await strapi.db.query("api::lesson.lesson").count();
-
       const enrollments = await strapi.db
         .query("api::enrollment.enrollment")
         .count();
-
       const quizzes = await strapi.db.query("api::quiz.quiz").count();
-
       const quizAttempts = await strapi.db
         .query("api::quiz-attempt.quiz-attempt")
         .count();
@@ -46,6 +61,7 @@ export default factories.createCoreController(
       return {
         data: {
           users,
+          usersByRole,
           courses,
           lessons,
           enrollments,
@@ -110,7 +126,6 @@ export default factories.createCoreController(
         return ctx.unauthorized("Authentication required");
       }
 
-      // Check current user's role
       const adminUser = await strapi.db
         .query("plugin::users-permissions.user")
         .findOne({
@@ -133,7 +148,6 @@ export default factories.createCoreController(
         return ctx.badRequest("Role is required");
       }
 
-      // Find requested role
       const targetRole = await strapi.db
         .query("plugin::users-permissions.role")
         .findOne({
@@ -146,7 +160,6 @@ export default factories.createCoreController(
         return ctx.badRequest(`Role '${role}' does not exist`);
       }
 
-      // Find target user
       const targetUser = await strapi.db
         .query("plugin::users-permissions.user")
         .findOne({
@@ -159,7 +172,6 @@ export default factories.createCoreController(
         return ctx.notFound("User not found");
       }
 
-      // Assign role
       await strapi.db.query("plugin::users-permissions.user").update({
         where: {
           id: targetUser.id,
@@ -310,47 +322,47 @@ export default factories.createCoreController(
       };
     },
     async me(ctx) {
-  const user = ctx.state.user;
+      const user = ctx.state.user;
 
-  if (!user) {
-    return ctx.unauthorized("Authentication required");
-  }
+      if (!user) {
+        return ctx.unauthorized("Authentication required");
+      }
 
-  const currentUser = await strapi.db
-    .query("plugin::users-permissions.user")
-    .findOne({
-      where: {
-        id: user.id,
-      },
-      populate: {
-        role: true,
-      },
-    });
+      const currentUser = await strapi.db
+        .query("plugin::users-permissions.user")
+        .findOne({
+          where: {
+            id: user.id,
+          },
+          populate: {
+            role: true,
+          },
+        });
 
-  if (!currentUser) {
-    return ctx.notFound("User not found");
-  }
+      if (!currentUser) {
+        return ctx.notFound("User not found");
+      }
 
-  if (currentUser.blocked) {
-    return ctx.forbidden("Your account has been blocked by an administrator");
-  }
+      if (currentUser.blocked) {
+        return ctx.forbidden("Your account has been blocked by an administrator");
+      }
 
-  return {
-    data: {
-      id: currentUser.id,
-      documentId: currentUser.documentId,
-      username: currentUser.username,
-      email: currentUser.email,
-      blocked: currentUser.blocked || false,
-      role: currentUser.role
-        ? {
-            id: currentUser.role.id,
-            name: currentUser.role.name,
-            type: currentUser.role.type,
-          }
-        : null,
+      return {
+        data: {
+          id: currentUser.id,
+          documentId: currentUser.documentId,
+          username: currentUser.username,
+          email: currentUser.email,
+          blocked: currentUser.blocked || false,
+          role: currentUser.role
+            ? {
+                id: currentUser.role.id,
+                name: currentUser.role.name,
+                type: currentUser.role.type,
+              }
+            : null,
+        },
+      };
     },
-  };
-},
   }),
 );
