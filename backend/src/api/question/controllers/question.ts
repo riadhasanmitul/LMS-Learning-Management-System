@@ -134,7 +134,21 @@ export default factories.createCoreController(
         );
       }
 
-      return await super.create(ctx);
+      const createdQuestion = await strapi
+        .documents("api::question.question")
+        .create({
+          data: {
+            question: body.question,
+            options: body.options || [],
+            correctAnswer: body.correctAnswer,
+            quiz: quiz.documentId,
+          },
+          status: "draft",
+        });
+
+      return {
+        data: createdQuestion,
+      };
     },
 
     async update(ctx) {
@@ -176,7 +190,24 @@ export default factories.createCoreController(
         );
       }
 
-      return await super.update(ctx);
+      const bodyData = ctx.request.body?.data || {};
+
+      const updatePayload: Record<string, any> = {};
+      if (bodyData.question !== undefined) updatePayload.question = bodyData.question;
+      if (bodyData.options !== undefined) updatePayload.options = bodyData.options;
+      if (bodyData.correctAnswer !== undefined) updatePayload.correctAnswer = bodyData.correctAnswer;
+
+      const updatedQuestion = await strapi
+        .documents("api::question.question")
+        .update({
+          documentId,
+          data: updatePayload,
+          status: "draft",
+        });
+
+      return {
+        data: updatedQuestion,
+      };
     },
 
     async delete(ctx) {
@@ -218,7 +249,13 @@ export default factories.createCoreController(
         );
       }
 
-      return await super.delete(ctx);
+      await strapi.documents("api::question.question").delete({
+        documentId,
+      });
+
+      return {
+        data: { message: "Question deleted successfully", documentId },
+      };
     },
 
     async contentManagerQuestions(ctx) {

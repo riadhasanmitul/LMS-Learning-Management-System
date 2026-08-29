@@ -128,7 +128,19 @@ export default factories.createCoreController(
         );
       }
 
-      return await super.create(ctx);
+      const createdQuiz = await strapi
+        .documents("api::quiz.quiz")
+        .create({
+          data: {
+            title: body.title,
+            course: course.documentId,
+          },
+          status: "draft",
+        });
+
+      return {
+        data: createdQuiz,
+      };
     },
 
     async update(ctx) {
@@ -170,32 +182,23 @@ export default factories.createCoreController(
         );
       }
 
-      const newCourseDocumentId = ctx.request.body?.data?.course;
+      const bodyData = ctx.request.body?.data || {};
 
-      if (
-        role === "Instructor" &&
-        newCourseDocumentId !== undefined &&
-        newCourseDocumentId !== quiz.course?.documentId
-      ) {
-        const newCourse = await strapi
-          .documents("api::course.course")
-          .findOne({
-            documentId: newCourseDocumentId,
-            populate: ["instructor"],
-          });
+      const updatePayload: Record<string, any> = {};
+      if (bodyData.title !== undefined) updatePayload.title = bodyData.title;
+      if (bodyData.course !== undefined) updatePayload.course = bodyData.course;
 
-        if (!newCourse) {
-          return ctx.notFound("Target course not found");
-        }
+      const updatedQuiz = await strapi
+        .documents("api::quiz.quiz")
+        .update({
+          documentId,
+          data: updatePayload,
+          status: "draft",
+        });
 
-        if (newCourse.instructor?.id !== user.id) {
-          return ctx.forbidden(
-            "You can only move quizzes into your own courses",
-          );
-        }
-      }
-
-      return await super.update(ctx);
+      return {
+        data: updatedQuiz,
+      };
     },
 
     async delete(ctx) {
@@ -237,7 +240,13 @@ export default factories.createCoreController(
         );
       }
 
-      return await super.delete(ctx);
+      await strapi.documents("api::quiz.quiz").delete({
+        documentId,
+      });
+
+      return {
+        data: { message: "Quiz deleted successfully", documentId },
+      };
     },
 
     async contentManagerQuizzes(ctx) {
