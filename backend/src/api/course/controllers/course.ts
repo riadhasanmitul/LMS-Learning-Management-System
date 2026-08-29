@@ -86,24 +86,17 @@ export default factories.createCoreController(
   "api::course.course",
   ({ strapi }) => ({
     async create(ctx) {
-      const user = ctx.state.user;
+      const user = await getAuthUser(ctx, strapi);
 
       if (!user) {
         return ctx.unauthorized("Authentication required");
       }
 
-      const currentUser = await strapi.db
-        .query("plugin::users-permissions.user")
-        .findOne({
-          where: {
-            id: user.id,
-          },
-          populate: {
-            role: true,
-          },
-        });
+      if (user.blocked) {
+        return ctx.forbidden("Your account has been blocked by an administrator");
+      }
 
-      const role = currentUser?.role?.name;
+      const role = await getUserRole(strapi, user);
 
       if (
         role !== "Admin" &&
@@ -138,28 +131,20 @@ export default factories.createCoreController(
       }
 
       return response;
-
     },
 
     async update(ctx) {
-      const user = ctx.state.user;
+      const user = await getAuthUser(ctx, strapi);
 
       if (!user) {
         return ctx.unauthorized("Authentication required");
       }
 
-      const currentUser = await strapi.db
-        .query("plugin::users-permissions.user")
-        .findOne({
-          where: {
-            id: user.id,
-          },
-          populate: {
-            role: true,
-          },
-        });
+      if (user.blocked) {
+        return ctx.forbidden("Your account has been blocked by an administrator");
+      }
 
-      const role = currentUser?.role?.name;
+      const role = await getUserRole(strapi, user);
 
       if (
         role !== "Admin" &&
@@ -182,37 +167,25 @@ export default factories.createCoreController(
         return ctx.notFound("Course not found");
       }
 
-      if (
-        role === "Instructor" &&
-        course.instructor?.id !== user.id
-      ) {
-        return ctx.forbidden(
-          "You can only update your own courses",
-        );
+      if (role === "Instructor" && course.instructor?.id !== user.id) {
+        return ctx.forbidden("You can only update your own courses");
       }
 
       return await super.update(ctx);
     },
 
     async delete(ctx) {
-      const user = ctx.state.user;
+      const user = await getAuthUser(ctx, strapi);
 
       if (!user) {
         return ctx.unauthorized("Authentication required");
       }
 
-      const currentUser = await strapi.db
-        .query("plugin::users-permissions.user")
-        .findOne({
-          where: {
-            id: user.id,
-          },
-          populate: {
-            role: true,
-          },
-        });
+      if (user.blocked) {
+        return ctx.forbidden("Your account has been blocked by an administrator");
+      }
 
-      const role = currentUser?.role?.name;
+      const role = await getUserRole(strapi, user);
 
       if (
         role !== "Admin" &&
@@ -235,20 +208,15 @@ export default factories.createCoreController(
         return ctx.notFound("Course not found");
       }
 
-      if (
-        role === "Instructor" &&
-        course.instructor?.id !== user.id
-      ) {
-        return ctx.forbidden(
-          "You can only delete your own courses",
-        );
+      if (role === "Instructor" && course.instructor?.id !== user.id) {
+        return ctx.forbidden("You can only delete your own courses");
       }
 
       return await super.delete(ctx);
     },
 
     async myCourses(ctx) {
-      const user = ctx.state.user;
+      const user = await getAuthUser(ctx, strapi);
 
       if (!user) {
         return ctx.unauthorized("Authentication required");
@@ -275,103 +243,97 @@ export default factories.createCoreController(
     },
 
     async instructorCourses(ctx) {
-  const user = ctx.state.user;
+      const user = await getAuthUser(ctx, strapi);
 
-  if (!user) {
-    return ctx.unauthorized("Authentication required");
-  }
+      if (!user) {
+        return ctx.unauthorized("Authentication required");
+      }
 
-  const currentUser = await strapi.db
-    .query("plugin::users-permissions.user")
-    .findOne({
-      where: {
-        id: user.id,
-      },
-      populate: {
-        role: true,
-      },
-    });
+      const role = await getUserRole(strapi, user);
 
-  if (currentUser?.role?.name !== "Instructor") {
-    return ctx.forbidden("Instructor access required");
-  }
+      if (role !== "Instructor" && role !== "Admin" && role !== "Content Manager") {
+        return ctx.forbidden("Instructor, Admin, or Content Manager access required");
+      }
 
-  const publishedCourses = await strapi
-    .documents("api::course.course")
-    .findMany({
-      status: "published",
-    });
+      const publishedCourses = await strapi
+        .documents("api::course.course")
+        .findMany({
+          status: "published",
+        });
 
-  const publishedMap = new Map(
-    publishedCourses.map((c) => [c.documentId, c.publishedAt || c.updatedAt || new Date().toISOString()]),
-  );
+      const publishedMap = new Map(
+        publishedCourses.map((c) => [c.documentId, c.publishedAt || c.updatedAt || new Date().toISOString()]),
+      );
 
-  const courses = await strapi
-    .documents("api::course.course")
-    .findMany({
-      status: "draft",
-      filters: {
-        instructor: {
-          id: user.id,
-        },
-      },
-      sort: ["createdAt:desc"],
-    });
+      const filterClause =
+        role === "Instructor"
+          ? { instructor: { id: user.id } }
+          : {};
 
-  const result = courses.map((course) => ({
-    ...course,
-    publishedAt: publishedMap.has(course.documentId)
-      ? publishedMap.get(course.documentId)
-      : null,
-  }));
+      const courses = await strapi
+        .documents("api::course.course")
+        .findMany({
+          status: "draft",
+          filters: filterClause,
+          sort: ["createdAt:desc"],
+        });
 
-  return {
-    data: result,
-  };
-},
-async contentManagerCourses(ctx) {
-  const user = await getAuthUser(ctx, strapi);
+      const result = courses.map((course) => ({
+        ...course,
+        publishedAt: publishedMap.has(course.documentId)
+          ? publishedMap.get(course.documentId)
+          : null,
+      }));
 
-  if (!user) {
-    return ctx.unauthorized("Authentication required");
-  }
+      return {
+        data: result,
+      };
+    },
 
-  const role = await getUserRole(strapi, user);
+    async contentManagerCourses(ctx) {
+      const user = await getAuthUser(ctx, strapi);
 
-  if (role !== "Content Manager" && role !== "Admin") {
-    return ctx.forbidden("Content Manager or Admin access required");
-  }
+      if (!user) {
+        return ctx.unauthorized("Authentication required");
+      }
 
-  const publishedCourses = await strapi
-    .documents("api::course.course")
-    .findMany({
-      status: "published",
-    });
+      const role = await getUserRole(strapi, user);
 
-  const publishedMap = new Map(
-    publishedCourses.map((c) => [c.documentId, c.publishedAt || c.updatedAt || new Date().toISOString()]),
-  );
+      if (role !== "Content Manager" && role !== "Admin" && role !== "Instructor") {
+        return ctx.forbidden("Content Manager, Admin, or Instructor access required");
+      }
 
-  const courses = await strapi
-    .documents("api::course.course")
-    .findMany({
-      status: "draft",
-      sort: ["createdAt:desc"],
-    });
+      const publishedCourses = await strapi
+        .documents("api::course.course")
+        .findMany({
+          status: "published",
+        });
 
-  const result = courses.map((course) => ({
-    ...course,
-    publishedAt: publishedMap.has(course.documentId)
-      ? publishedMap.get(course.documentId)
-      : null,
-  }));
+      const publishedMap = new Map(
+        publishedCourses.map((c) => [c.documentId, c.publishedAt || c.updatedAt || new Date().toISOString()]),
+      );
 
-  return {
-    data: result,
-  };
-},
+      const courses = await strapi
+        .documents("api::course.course")
+        .findMany({
+          status: "draft",
+          sort: ["createdAt:desc"],
+        });
+
+      const result = courses.map((course) => ({
+        ...course,
+        publishedAt: publishedMap.has(course.documentId)
+          ? publishedMap.get(course.documentId)
+          : null,
+      }));
+
+      return {
+        data: result,
+      };
+    },
+
     async courseProgress(ctx) {
-      const user = ctx.state.user;
+      const user = await getAuthUser(ctx, strapi);
 
       if (!user) {
         return ctx.unauthorized("Authentication required");
@@ -465,21 +427,15 @@ async contentManagerCourses(ctx) {
         },
       };
     },
+
     async publishCourse(ctx) {
-      const user = ctx.state.user;
+      const user = await getAuthUser(ctx, strapi);
 
       if (!user) {
         return ctx.unauthorized("Authentication required");
       }
 
-      const currentUser = await strapi.db
-        .query("plugin::users-permissions.user")
-        .findOne({
-          where: { id: user.id },
-          populate: { role: true },
-        });
-
-      const role = currentUser?.role?.name;
+      const role = await getUserRole(strapi, user);
 
       if (
         role !== "Admin" &&
@@ -510,21 +466,15 @@ async contentManagerCourses(ctx) {
 
       return { data: published };
     },
+
     async unpublishCourse(ctx) {
-      const user = ctx.state.user;
+      const user = await getAuthUser(ctx, strapi);
 
       if (!user) {
         return ctx.unauthorized("Authentication required");
       }
 
-      const currentUser = await strapi.db
-        .query("plugin::users-permissions.user")
-        .findOne({
-          where: { id: user.id },
-          populate: { role: true },
-        });
-
-      const role = currentUser?.role?.name;
+      const role = await getUserRole(strapi, user);
 
       if (
         role !== "Admin" &&
@@ -555,6 +505,5 @@ async contentManagerCourses(ctx) {
 
       return { data: unpublished };
     },
-    
   }),
 );
