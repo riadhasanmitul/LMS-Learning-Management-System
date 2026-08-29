@@ -85,6 +85,53 @@ async function getUserRole(strapi: any, user: any): Promise<string> {
 export default factories.createCoreController(
   "api::quiz.quiz",
   ({ strapi }) => ({
+    async find(ctx) {
+      const user = await getAuthUser(ctx, strapi);
+
+      if (!user) {
+        return ctx.unauthorized("Authentication required");
+      }
+
+      const courseDocumentId =
+        (ctx.query?.filters as any)?.course?.documentId?.$eq ||
+        (ctx.query?.filters as any)?.course?.documentId ||
+        ctx.query?.course;
+
+      if (!courseDocumentId) {
+        return await super.find(ctx);
+      }
+
+      const publishedQuizzes = await strapi
+        .documents("api::quiz.quiz")
+        .findMany({
+          filters: {
+            course: {
+              documentId: String(courseDocumentId),
+            },
+          },
+          status: "published",
+          sort: ["createdAt:desc"],
+        });
+
+      const draftQuizzes = await strapi
+        .documents("api::quiz.quiz")
+        .findMany({
+          filters: {
+            course: {
+              documentId: String(courseDocumentId),
+            },
+          },
+          status: "draft",
+          sort: ["createdAt:desc"],
+        });
+
+      const quizzes = publishedQuizzes.length > 0 ? publishedQuizzes : draftQuizzes;
+
+      return {
+        data: quizzes,
+      };
+    },
+
     async findOne(ctx) {
       const user = await getAuthUser(ctx, strapi);
 
@@ -94,31 +141,66 @@ export default factories.createCoreController(
 
       const documentId = ctx.params.id;
 
-      const quiz = await strapi
+      let quiz = await strapi
         .documents("api::quiz.quiz")
         .findOne({
           documentId,
-          populate: ["questions"],
-          status: "draft",
+          populate: ["course"],
+          status: "published",
         });
 
       if (!quiz) {
-        const published = await strapi
+        quiz = await strapi
           .documents("api::quiz.quiz")
           .findOne({
             documentId,
-            populate: ["questions"],
-            status: "published",
+            populate: ["course"],
+            status: "draft",
           });
-
-        if (!published) {
-          return ctx.notFound("Quiz not found");
-        }
-
-        return { data: published };
       }
 
-      return { data: quiz };
+      if (!quiz) {
+        return ctx.notFound("Quiz not found");
+      }
+
+      const draftQuestions = await strapi
+        .documents("api::question.question")
+        .findMany({
+          filters: {
+            quiz: {
+              documentId: quiz.documentId,
+            },
+          },
+          status: "draft",
+          sort: ["createdAt:asc"],
+        });
+
+      const publishedQuestions = await strapi
+        .documents("api::question.question")
+        .findMany({
+          filters: {
+            quiz: {
+              documentId: quiz.documentId,
+            },
+          },
+          status: "published",
+          sort: ["createdAt:asc"],
+        });
+
+      const questions = draftQuestions.length > 0 ? draftQuestions : publishedQuestions;
+
+      return {
+        data: {
+          ...quiz,
+          questions: questions.map((q) => ({
+            id: q.id,
+            documentId: q.documentId,
+            question: q.question,
+            options: q.options,
+            correctAnswer: q.correctAnswer,
+          })),
+        },
+      };
     },
 
     async create(ctx) {
