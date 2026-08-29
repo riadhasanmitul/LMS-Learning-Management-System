@@ -151,6 +151,34 @@ export default {
           }
         }
       }
+      // 4. Automatically convert plain text passwords (e.g. StrongPass123) into bcrypt hashes on bootstrap
+      try {
+        const bcrypt = require("bcryptjs");
+        const allUsers = await strapi.db
+          .query("plugin::users-permissions.user")
+          .findMany({});
+
+        for (const u of allUsers) {
+          if (
+            u.password &&
+            typeof u.password === "string" &&
+            !u.password.startsWith("$2a$") &&
+            !u.password.startsWith("$2b$") &&
+            !u.password.startsWith("$2y$")
+          ) {
+            const hashedPassword = await bcrypt.hash(u.password, 10);
+            await strapi.db.query("plugin::users-permissions.user").update({
+              where: { id: u.id },
+              data: {
+                password: hashedPassword,
+              },
+            });
+            console.log(`[Bootstrap] Auto-hashed password for user: ${u.username} (${u.email})`);
+          }
+        }
+      } catch (hashErr) {
+        console.error("Auto password hashing error:", hashErr);
+      }
     } catch (err) {
       console.error("Bootstrap permissions setup error:", err);
     }
