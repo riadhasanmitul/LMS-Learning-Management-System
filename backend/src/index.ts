@@ -69,21 +69,31 @@ export default {
               });
           }
 
-          const existingLink = await strapi.db
-            .connection("up_permissions_role_lnk")
-            .where({
-              permission_id: permission.id,
-              role_id: role.id,
-            })
-            .first();
+          // Safe linkage across SQLite and Postgres table naming schemas
+          const tableNames = ["up_permissions_role_links", "up_permissions_role_lnk"];
+          for (const tableName of tableNames) {
+            try {
+              const hasTable = await strapi.db.connection.schema.hasTable(tableName);
+              if (hasTable) {
+                const existingLink = await strapi.db
+                  .connection(tableName)
+                  .where({
+                    permission_id: permission.id,
+                    role_id: role.id,
+                  })
+                  .first();
 
-          if (!existingLink) {
-            await strapi.db
-              .connection("up_permissions_role_lnk")
-              .insert({
-                permission_id: permission.id,
-                role_id: role.id,
-              });
+                if (!existingLink) {
+                  await strapi.db.connection(tableName).insert({
+                    permission_id: permission.id,
+                    role_id: role.id,
+                  });
+                }
+                break;
+              }
+            } catch {
+              // Ignore if individual table query fails
+            }
           }
         }
       }
