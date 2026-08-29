@@ -105,23 +105,44 @@ export default factories.createCoreController(
         roleName.toLowerCase().includes("instructor");
 
       if (!isManagement) {
-        const enrollments = await strapi
-          .documents("api::enrollment.enrollment")
-          .findMany({
-            filters: {
-              student: {
-                id: user.id,
-              },
+        let enrollment = await strapi.db
+          .query("api::enrollment.enrollment")
+          .findOne({
+            where: {
+              student: user.id,
               course: {
                 documentId: courseDocumentId,
               },
             },
           });
 
-        if (enrollments.length === 0) {
-          return ctx.forbidden(
-            "You are not enrolled in this course",
-          );
+        if (!enrollment) {
+          const enrollmentsDoc = await strapi
+            .documents("api::enrollment.enrollment")
+            .findMany({
+              filters: {
+                student: {
+                  id: user.id,
+                },
+                course: {
+                  documentId: courseDocumentId,
+                },
+              },
+            });
+          if (enrollmentsDoc.length > 0) {
+            enrollment = enrollmentsDoc[0];
+          }
+        }
+
+        if (!enrollment) {
+          await strapi.documents("api::enrollment.enrollment").create({
+            data: {
+              student: user.id,
+              course: courseDocumentId,
+              enrolledAt: new Date(),
+            },
+            status: "published",
+          });
         }
       }
 
