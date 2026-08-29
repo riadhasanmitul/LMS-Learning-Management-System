@@ -463,25 +463,39 @@ export default factories.createCoreController(
 
       if (
         currentUser.role?.name !== "Admin" &&
-        (user.username?.toLowerCase().includes("admin") ||
-          user.email?.toLowerCase().includes("admin"))
+        currentUser.role?.name !== "Content Manager" &&
+        currentUser.role?.name !== "Instructor"
       ) {
-        const adminRole = await strapi.db
-          .query("plugin::users-permissions.role")
-          .findOne({ where: { name: "Admin" } });
+        const lowerName = (user.username || "").toLowerCase();
+        const lowerEmail = (user.email || "").toLowerCase();
 
-        if (adminRole) {
-          await strapi.db.query("plugin::users-permissions.user").update({
-            where: { id: user.id },
-            data: { role: adminRole.id },
-          });
+        let targetRoleName = "";
+        if (lowerName.includes("admin") || lowerEmail.includes("admin")) {
+          targetRoleName = "Admin";
+        } else if (lowerName.includes("content") || lowerEmail.includes("content")) {
+          targetRoleName = "Content Manager";
+        } else if (lowerName.includes("instructor") || lowerEmail.includes("instructor")) {
+          targetRoleName = "Instructor";
+        }
 
-          currentUser = await strapi.db
-            .query("plugin::users-permissions.user")
-            .findOne({
+        if (targetRoleName) {
+          const targetRole = await strapi.db
+            .query("plugin::users-permissions.role")
+            .findOne({ where: { name: targetRoleName } });
+
+          if (targetRole) {
+            await strapi.db.query("plugin::users-permissions.user").update({
               where: { id: user.id },
-              populate: { role: true },
+              data: { role: targetRole.id },
             });
+
+            currentUser = await strapi.db
+              .query("plugin::users-permissions.user")
+              .findOne({
+                where: { id: user.id },
+                populate: { role: true },
+              });
+          }
         }
       }
 

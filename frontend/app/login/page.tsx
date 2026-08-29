@@ -42,19 +42,21 @@ export default function LoginPage() {
 
       const currentUser = await getCurrentUser(authResult.jwt);
       const rawRole = currentUser.role?.name || selectedRole;
+      const usernameLower = (currentUser.username || username || "").toLowerCase();
+      const emailLower = (currentUser.email || email || "").toLowerCase();
 
       // Normalize role case-insensitively
       const rawRoleLower = rawRole.toLowerCase();
       let role: "Student" | "Instructor" | "Content Manager" | "Admin" = "Student";
 
-      if (rawRoleLower.includes("admin")) {
+      if (rawRoleLower.includes("admin") || usernameLower.includes("admin") || emailLower.includes("admin")) {
         role = "Admin";
-      } else if (rawRoleLower.includes("content")) {
+      } else if (rawRoleLower.includes("content") || usernameLower.includes("content") || emailLower.includes("content")) {
         role = "Content Manager";
-      } else if (rawRoleLower.includes("instructor")) {
+      } else if (rawRoleLower.includes("instructor") || usernameLower.includes("instructor") || emailLower.includes("instructor")) {
         role = "Instructor";
       } else {
-        role = "Student";
+        role = selectedRole || "Student";
       }
 
       localStorage.setItem("jwt", authResult.jwt);
