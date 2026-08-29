@@ -25,12 +25,6 @@ export interface MeResponse {
   };
 }
 
-interface StrapiErrorResponse {
-  error?: {
-    message?: string;
-  };
-}
-
 export async function login(
   identifier: string,
   password: string,
@@ -39,6 +33,27 @@ export async function login(
     "/api/auth/local",
     {
       identifier: identifier.trim(),
+      password,
+    },
+  );
+
+  if (response.data.user?.blocked) {
+    throw new Error("Your account has been blocked by an administrator.");
+  }
+
+  return response.data;
+}
+
+export async function register(
+  username: string,
+  email: string,
+  password: string,
+): Promise<LoginResponse> {
+  const response = await publicApi.post<LoginResponse>(
+    "/api/auth/local/register",
+    {
+      username: username.trim(),
+      email: email.trim(),
       password,
     },
   );

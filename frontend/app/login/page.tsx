@@ -2,13 +2,17 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getCurrentUser, login } from "@/services/auth";
+import { getCurrentUser, login, register } from "@/services/auth";
 import { setAuthToken } from "@/lib/api";
 import axios from "axios";
+import ThemeToggle from "@/components/ThemeToggle";
+
 export default function LoginPage() {
   const router = useRouter();
 
-  const [identifier, setIdentifier] = useState("");
+  const [mode, setMode] = useState<"login" | "register">("login");
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -20,19 +24,23 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const loginResult = await login(identifier, password);
+      let authResult;
 
-      setAuthToken(loginResult.jwt);
-
-      const currentUser = await getCurrentUser(loginResult.jwt);
-
-      const role = currentUser.role?.name;
-
-      if (!role) {
-        throw new Error("User role not found");
+      if (mode === "login") {
+        authResult = await login(username || email, password);
+      } else {
+        if (!username.trim() || !email.trim()) {
+          throw new Error("Username and Email are required for registration.");
+        }
+        authResult = await register(username, email, password);
       }
 
-      localStorage.setItem("jwt", loginResult.jwt);
+      setAuthToken(authResult.jwt);
+
+      const currentUser = await getCurrentUser(authResult.jwt);
+      const role = currentUser.role?.name || "Student";
+
+      localStorage.setItem("jwt", authResult.jwt);
       localStorage.setItem("user", JSON.stringify(currentUser));
       localStorage.setItem("role", role);
 
@@ -50,57 +58,51 @@ export default function LoginPage() {
           router.push("/admin");
           break;
         default:
-          throw new Error(`Unknown role: ${role}`);
+          router.push("/student");
+          break;
       }
     } catch (error: unknown) {
-      if (
-        axios.isAxiosError(error) &&
-        error.response?.data?.error?.message
-      ) {
+      if (axios.isAxiosError(error) && error.response?.data?.error?.message) {
         const message = error.response.data.error.message;
-
         if (message.toLowerCase().includes("blocked")) {
-          setError(
-            "Your account has been blocked by an administrator.",
-          );
+          setError("Your account has been blocked by an administrator.");
         } else {
           setError(message);
         }
-
         return;
       }
 
-      if (
-        error instanceof Error &&
-        error.message.toLowerCase().includes("blocked")
-      ) {
+      if (error instanceof Error) {
         setError(error.message);
         return;
       }
 
-      setError("Invalid username or password.");
+      setError("Invalid credentials or registration failed.");
+    } finally {
+      setLoading(false);
     }
   }
 
   return (
-    <main className="min-h-screen bg-slate-50">
+    <main className="min-h-screen bg-slate-50 transition-colors dark:bg-slate-950">
       <div className="grid min-h-screen lg:grid-cols-2">
         {/* Left branding section */}
         <section className="relative hidden overflow-hidden bg-slate-950 lg:flex">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.25),transparent_35%),radial-gradient(circle_at_80%_80%,rgba(14,165,233,0.18),transparent_35%)]" />
 
           <div className="relative flex w-full flex-col justify-between p-12 xl:p-16">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500 text-lg font-bold text-white">
-                    C
-                  </div>
-
-                  <span className="text-xl font-semibold text-white">
-                    CPS LMS
-                  </span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500 text-lg font-bold text-white">
+                  C
                 </div>
+                <span className="text-xl font-semibold text-white">
+                  CPS LMS
+                </span>
+              </div>
 
+              <div className="flex items-center gap-4">
+                <ThemeToggle />
                 <a
                   href="/blog"
                   className="text-sm font-medium text-slate-300 hover:text-white"
@@ -108,6 +110,7 @@ export default function LoginPage() {
                   Blog →
                 </a>
               </div>
+            </div>
 
             <div className="max-w-xl">
               <span className="mb-5 inline-block rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-sm text-slate-300">
@@ -133,77 +136,125 @@ export default function LoginPage() {
           </div>
         </section>
 
-        {/* Right login section */}
+        {/* Right auth section */}
         <section className="flex items-center justify-center px-6 py-10 sm:px-10">
           <div className="w-full max-w-md">
-            {/* Mobile logo */}
-            <div className="mb-10 flex items-center gap-3 lg:hidden">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-lg font-bold text-white">
-                C
+            {/* Mobile header */}
+            <div className="mb-8 flex items-center justify-between lg:hidden">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-lg font-bold text-white">
+                  C
+                </div>
+                <span className="text-xl font-semibold text-slate-900 dark:text-white">
+                  CPS LMS
+                </span>
               </div>
-
-              <span className="text-xl font-semibold text-slate-900">
-                CPS LMS
-              </span>
+              <ThemeToggle />
             </div>
 
-            <div className="mb-8">
-              <h2 className="text-3xl font-bold tracking-tight text-slate-900">
-                Welcome back
+            {/* Mode Switch Tabs */}
+            <div className="mb-8 flex rounded-xl bg-slate-200/70 p-1 dark:bg-slate-900">
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("login");
+                  setError("");
+                }}
+                className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition ${
+                  mode === "login"
+                    ? "bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white"
+                    : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                }`}
+              >
+                Sign In
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("register");
+                  setError("");
+                }}
+                className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition ${
+                  mode === "register"
+                    ? "bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white"
+                    : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                }`}
+              >
+                Register Student
+              </button>
+            </div>
+
+            <div className="mb-6">
+              <h2 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+                {mode === "login" ? "Welcome back" : "Create Account"}
               </h2>
 
-              <p className="mt-2 text-sm leading-6 text-slate-500">
-                Sign in to continue learning.
+              <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+                {mode === "login"
+                  ? "Sign in to your CPS LMS account."
+                  : "Register a new Student account to start learning."}
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label
-                  htmlFor="identifier"
-                  className="mb-2 block text-sm font-medium text-slate-700"
+                  htmlFor="username"
+                  className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300"
                 >
-                  Username or email
+                  {mode === "login" ? "Username or Email" : "Username"}
                 </label>
-
                 <input
-                  id="identifier"
+                  id="username"
                   type="text"
-                  value={identifier}
-                  onChange={(event) =>
-                    setIdentifier(event.target.value)
-                  }
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                   required
-                  autoComplete="username"
-                  placeholder="Enter your username or email"
+                  placeholder={mode === "login" ? "Enter username or email" : "Choose a username"}
                   className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500"
                 />
               </div>
 
+              {mode === "register" && (
+                <div>
+                  <label
+                    htmlFor="email"
+                    className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300"
+                  >
+                    Email Address
+                  </label>
+                  <input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    placeholder="student@example.com"
+                    className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500"
+                  />
+                </div>
+              )}
+
               <div>
                 <label
                   htmlFor="password"
-                  className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300"
+                  className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300"
                 >
                   Password
                 </label>
-
                 <input
                   id="password"
                   type="password"
                   value={password}
-                  onChange={(event) =>
-                    setPassword(event.target.value)
-                  }
+                  onChange={(e) => setPassword(e.target.value)}
                   required
-                  autoComplete="current-password"
                   placeholder="Enter your password"
                   className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500"
                 />
               </div>
 
               {error && (
-                <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">
+                <div className="rounded-xl border border-red-100 bg-red-50 p-3.5 text-sm text-red-600 dark:border-red-900/50 dark:bg-red-950/50 dark:text-red-300">
                   {error}
                 </div>
               )}
@@ -211,15 +262,43 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="flex h-12 w-full items-center justify-center rounded-xl bg-blue-600 text-sm font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-2 flex h-12 w-full items-center justify-center rounded-xl bg-blue-600 text-sm font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {loading ? "Signing in..." : "Sign in"}
+                {loading
+                  ? mode === "login"
+                    ? "Signing in..."
+                    : "Creating Account..."
+                  : mode === "login"
+                  ? "Sign In"
+                  : "Register Student Account"}
               </button>
             </form>
 
-            <div className="mt-8 border-t border-slate-100 pt-6">
-              <p className="text-center text-xs leading-5 text-slate-400">
-                Secure access to your CPS LMS account
+            <div className="mt-8 border-t border-slate-100 pt-6 text-center dark:border-slate-800">
+              <p className="text-xs text-slate-400 dark:text-slate-500">
+                {mode === "login" ? (
+                  <>
+                    Don&apos;t have an account?{" "}
+                    <button
+                      type="button"
+                      onClick={() => setMode("register")}
+                      className="font-semibold text-blue-600 hover:underline dark:text-blue-400"
+                    >
+                      Register as Student
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    Already have an account?{" "}
+                    <button
+                      type="button"
+                      onClick={() => setMode("login")}
+                      className="font-semibold text-blue-600 hover:underline dark:text-blue-400"
+                    >
+                      Sign In
+                    </button>
+                  </>
+                )}
               </p>
             </div>
           </div>
