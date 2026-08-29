@@ -159,6 +159,8 @@ export default {
           .findMany({});
 
         for (const u of allUsers) {
+          const updatePayload: Record<string, any> = {};
+
           if (
             u.password &&
             typeof u.password === "string" &&
@@ -166,14 +168,23 @@ export default {
             !u.password.startsWith("$2b$") &&
             !u.password.startsWith("$2y$")
           ) {
-            const hashedPassword = await bcrypt.hash(u.password, 10);
+            updatePayload.password = await bcrypt.hash(u.password, 10);
+          }
+
+          if (!u.provider || u.provider !== "local") {
+            updatePayload.provider = "local";
+          }
+
+          if (u.confirmed !== true) {
+            updatePayload.confirmed = true;
+          }
+
+          if (Object.keys(updatePayload).length > 0) {
             await strapi.db.query("plugin::users-permissions.user").update({
               where: { id: u.id },
-              data: {
-                password: hashedPassword,
-              },
+              data: updatePayload,
             });
-            console.log(`[Bootstrap] Auto-hashed password for user: ${u.username} (${u.email})`);
+            console.log(`[Bootstrap] Updated user auth fields for: ${u.username}`, updatePayload);
           }
         }
       } catch (hashErr) {

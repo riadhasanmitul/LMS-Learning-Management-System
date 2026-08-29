@@ -272,6 +272,7 @@ export default factories.createCoreController(
             username,
             email,
             password: hashedPassword,
+            provider: "local",
             confirmed: true,
             blocked: false,
             role: targetRole?.id,
