@@ -251,7 +251,7 @@ export default function AdminDashboard() {
           </Link>
 
           <Link
-            href="/content-manager"
+            href="/admin/courses"
             className="group rounded-2xl border border-slate-200 bg-white p-6 transition hover:border-blue-200 hover:shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-900"
           >
             <div className="text-2xl">📚</div>

@@ -17,6 +17,14 @@ export default {
       },
     },
     {
+      method: "POST",
+      path: "/admin-dashboard/users",
+      handler: "admin-dashboard.createUser",
+      config: {
+        auth: false,
+      },
+    },
+    {
       method: "PUT",
       path: "/admin-dashboard/users/:documentId/role",
       handler: "admin-dashboard.assignRole",

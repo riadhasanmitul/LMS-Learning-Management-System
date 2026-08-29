@@ -204,6 +204,86 @@ export default factories.createCoreController(
       };
     },
 
+    async createUser(ctx) {
+      const user = await getAuthUser(ctx, strapi);
+
+      if (!user) {
+        return ctx.unauthorized("Authentication required");
+      }
+
+      if (user.blocked) {
+        return ctx.forbidden("Your account has been blocked by an administrator");
+      }
+
+      const adminUser = user;
+
+      if (adminUser?.role?.name !== "Admin") {
+        return ctx.forbidden("Admin access required");
+      }
+
+      const { username, email, password, role } = ctx.request.body;
+
+      if (!username || !email || !password) {
+        return ctx.badRequest("Username, email, and password are required");
+      }
+
+      const existingUser = await strapi.db
+        .query("plugin::users-permissions.user")
+        .findOne({
+          where: {
+            $or: [{ username }, { email }],
+          },
+        });
+
+      if (existingUser) {
+        return ctx.badRequest("Username or email is already taken");
+      }
+
+      let targetRole = null;
+      if (role) {
+        targetRole = await strapi.db
+          .query("plugin::users-permissions.role")
+          .findOne({ where: { name: role } });
+      }
+
+      if (!targetRole) {
+        targetRole = await strapi.db
+          .query("plugin::users-permissions.role")
+          .findOne({ where: { name: "Student" } });
+      }
+
+      const newUser = await strapi.db
+        .query("plugin::users-permissions.user")
+        .create({
+          data: {
+            username,
+            email,
+            password,
+            confirmed: true,
+            blocked: false,
+            role: targetRole?.id,
+          },
+        });
+
+      return {
+        data: {
+          id: newUser.id,
+          documentId: newUser.documentId,
+          username: newUser.username,
+          email: newUser.email,
+          confirmed: true,
+          blocked: false,
+          role: targetRole
+            ? {
+                id: targetRole.id,
+                name: targetRole.name,
+                type: targetRole.type,
+              }
+            : null,
+        },
+      };
+    },
+
     async assignRole(ctx) {
       const user = await getAuthUser(ctx, strapi);
 

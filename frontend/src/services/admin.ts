@@ -57,6 +57,26 @@ export async function getAdminUsers(
   return response.data.data;
 }
 
+export async function createAdminUser(
+  token: string,
+  data: {
+    username: string;
+    email: string;
+    password?: string;
+    role?: string;
+  },
+): Promise<AdminUser> {
+  const response = await api.post<{
+    data: AdminUser;
+  }>("/api/admin-dashboard/users", data, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return response.data.data;
+}
+
 export async function assignUserRole(
   token: string,
   userDocumentId: string,
