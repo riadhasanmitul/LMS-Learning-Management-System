@@ -1,21 +1,70 @@
 import { factories } from "@strapi/strapi";
+import jwt from "jsonwebtoken";
+
+async function getAuthUser(ctx: any, strapi: any) {
+  if (ctx.state.user) {
+    const populated = await strapi.db
+      .query("plugin::users-permissions.user")
+      .findOne({
+        where: { id: ctx.state.user.id },
+        populate: { role: true },
+      });
+    if (populated) return populated;
+  }
+
+  const authHeader =
+    ctx.headers?.authorization ||
+    ctx.request?.headers?.authorization ||
+    ctx.header?.authorization;
+
+  if (
+    !authHeader ||
+    typeof authHeader !== "string" ||
+    !authHeader.startsWith("Bearer ")
+  ) {
+    return null;
+  }
+
+  const token = authHeader.substring(7).trim();
+  if (!token) return null;
+
+  try {
+    const jwtSecret =
+      process.env.JWT_SECRET ||
+      strapi.config.get("plugin::users-permissions.jwtSecret") ||
+      "default_jwt_secret";
+
+    const payload = jwt.verify(token, jwtSecret) as { id?: number };
+    if (!payload || !payload.id) return null;
+
+    const user = await strapi.db
+      .query("plugin::users-permissions.user")
+      .findOne({
+        where: { id: payload.id },
+        populate: { role: true },
+      });
+
+    return user;
+  } catch {
+    return null;
+  }
+}
 
 export default factories.createCoreController(
   "api::course.course",
   ({ strapi }) => ({
     async stats(ctx) {
-      const user = ctx.state.user;
+      const user = await getAuthUser(ctx, strapi);
 
       if (!user) {
         return ctx.unauthorized("Authentication required");
       }
 
-      let adminUser = await strapi.db
-        .query("plugin::users-permissions.user")
-        .findOne({
-          where: { id: user.id },
-          populate: { role: true },
-        });
+      if (user.blocked) {
+        return ctx.forbidden("Your account has been blocked by an administrator");
+      }
+
+      let adminUser = user;
 
       if (
         adminUser?.role?.name !== "Admin" &&
@@ -90,18 +139,17 @@ export default factories.createCoreController(
     },
 
     async users(ctx) {
-      const user = ctx.state.user;
+      const user = await getAuthUser(ctx, strapi);
 
       if (!user) {
         return ctx.unauthorized("Authentication required");
       }
 
-      let adminUser = await strapi.db
-        .query("plugin::users-permissions.user")
-        .findOne({
-          where: { id: user.id },
-          populate: { role: true },
-        });
+      if (user.blocked) {
+        return ctx.forbidden("Your account has been blocked by an administrator");
+      }
+
+      let adminUser = user;
 
       if (
         adminUser?.role?.name !== "Admin" &&
@@ -155,19 +203,19 @@ export default factories.createCoreController(
         })),
       };
     },
+
     async assignRole(ctx) {
-      const user = ctx.state.user;
+      const user = await getAuthUser(ctx, strapi);
 
       if (!user) {
         return ctx.unauthorized("Authentication required");
       }
 
-      const adminUser = await strapi.db
-        .query("plugin::users-permissions.user")
-        .findOne({
-          where: { id: user.id },
-          populate: { role: true },
-        });
+      if (user.blocked) {
+        return ctx.forbidden("Your account has been blocked by an administrator");
+      }
+
+      const adminUser = user;
 
       if (adminUser?.role?.name !== "Admin") {
         return ctx.forbidden("Admin access required");
@@ -222,19 +270,19 @@ export default factories.createCoreController(
         },
       };
     },
+
     async blockUser(ctx) {
-      const user = ctx.state.user;
+      const user = await getAuthUser(ctx, strapi);
 
       if (!user) {
         return ctx.unauthorized("Authentication required");
       }
 
-      const adminUser = await strapi.db
-        .query("plugin::users-permissions.user")
-        .findOne({
-          where: { id: user.id },
-          populate: { role: true },
-        });
+      if (user.blocked) {
+        return ctx.forbidden("Your account has been blocked by an administrator");
+      }
+
+      const adminUser = user;
 
       if (adminUser?.role?.name !== "Admin") {
         return ctx.forbidden("Admin access required");
@@ -275,19 +323,19 @@ export default factories.createCoreController(
         },
       };
     },
+
     async unblockUser(ctx) {
-      const user = ctx.state.user;
+      const user = await getAuthUser(ctx, strapi);
 
       if (!user) {
         return ctx.unauthorized("Authentication required");
       }
 
-      const adminUser = await strapi.db
-        .query("plugin::users-permissions.user")
-        .findOne({
-          where: { id: user.id },
-          populate: { role: true },
-        });
+      if (user.blocked) {
+        return ctx.forbidden("Your account has been blocked by an administrator");
+      }
+
+      const adminUser = user;
 
       if (adminUser?.role?.name !== "Admin") {
         return ctx.forbidden("Admin access required");
@@ -323,23 +371,15 @@ export default factories.createCoreController(
         },
       };
     },
+
     async me(ctx) {
-      const user = ctx.state.user;
+      const user = await getAuthUser(ctx, strapi);
 
       if (!user) {
         return ctx.unauthorized("Authentication required");
       }
 
-      let currentUser = await strapi.db
-        .query("plugin::users-permissions.user")
-        .findOne({
-          where: { id: user.id },
-          populate: { role: true },
-        });
-
-      if (!currentUser) {
-        return ctx.notFound("User not found");
-      }
+      let currentUser = user;
 
       if (
         currentUser.role?.name !== "Admin" &&

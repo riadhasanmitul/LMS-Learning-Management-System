@@ -5,7 +5,7 @@ export default {
       path: "/admin-dashboard/stats",
       handler: "admin-dashboard.stats",
       config: {
-        auth: {},
+        auth: false,
       },
     },
     {
@@ -13,7 +13,7 @@ export default {
       path: "/admin-dashboard/users",
       handler: "admin-dashboard.users",
       config: {
-        auth: {},
+        auth: false,
       },
     },
     {
@@ -21,7 +21,7 @@ export default {
       path: "/admin-dashboard/users/:documentId/role",
       handler: "admin-dashboard.assignRole",
       config: {
-        auth: {},
+        auth: false,
       },
     },
     {
@@ -29,7 +29,7 @@ export default {
       path: "/admin-dashboard/users/:documentId/block",
       handler: "admin-dashboard.blockUser",
       config: {
-        auth: {},
+        auth: false,
       },
     },
     {
@@ -37,16 +37,16 @@ export default {
       path: "/admin-dashboard/users/:documentId/unblock",
       handler: "admin-dashboard.unblockUser",
       config: {
-        auth: {},
+        auth: false,
       },
     },
-{
-  method: "GET",
-  path: "/current-user",
-  handler: "admin-dashboard.me",
-  config: {
-    auth: {},
-  },
-},
+    {
+      method: "GET",
+      path: "/current-user",
+      handler: "admin-dashboard.me",
+      config: {
+        auth: false,
+      },
+    },
   ],
 };
