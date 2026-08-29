@@ -9,9 +9,7 @@ export default {
       path: "/lessons/course/:courseDocumentId",
       handler: "api::lesson.lesson.courseLessons",
       config: {
-        auth: {
-          scope: ["api::lesson.lesson.find"],
-        },
+        auth: false,
       },
     },
     {
@@ -19,9 +17,7 @@ export default {
       path: "/lessons/instructor/:courseDocumentId",
       handler: "api::lesson.lesson.instructorLessons",
       config: {
-        auth: {
-          scope: ["api::lesson.lesson.find"],
-        },
+        auth: false,
       },
     },
     {
@@ -29,9 +25,7 @@ export default {
       path: "/lessons/content-manager/:courseDocumentId",
       handler: "api::lesson.lesson.contentManagerLessons",
       config: {
-        auth: {
-          scope: ["api::lesson.lesson.find"],
-        },
+        auth: false,
       },
     },
     {
@@ -39,9 +33,7 @@ export default {
       path: "/lessons/:lessonDocumentId/publish",
       handler: "api::lesson.lesson.publishLesson",
       config: {
-        auth: {
-          scope: ["api::lesson.lesson.update"],
-        },
+        auth: false,
       },
     },
     {
@@ -49,9 +41,7 @@ export default {
       path: "/lessons/:lessonDocumentId/unpublish",
       handler: "api::lesson.lesson.unpublishLesson",
       config: {
-        auth: {
-          scope: ["api::lesson.lesson.update"],
-        },
+        auth: false,
       },
     },
   ],

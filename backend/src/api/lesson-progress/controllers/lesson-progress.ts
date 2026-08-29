@@ -1,20 +1,70 @@
-/**
- * lesson-progress controller
- */
-
 import { factories } from "@strapi/strapi";
+import jwt from "jsonwebtoken";
+
+async function getAuthUser(ctx: any, strapi: any) {
+  if (ctx.state.user) {
+    const populated = await strapi.db
+      .query("plugin::users-permissions.user")
+      .findOne({
+        where: { id: ctx.state.user.id },
+        populate: { role: true },
+      });
+    if (populated) return populated;
+  }
+
+  const authHeader =
+    ctx.headers?.authorization ||
+    ctx.request?.headers?.authorization ||
+    ctx.header?.authorization;
+
+  if (
+    !authHeader ||
+    typeof authHeader !== "string" ||
+    !authHeader.startsWith("Bearer ")
+  ) {
+    return null;
+  }
+
+  const token = authHeader.substring(7).trim();
+  if (!token) return null;
+
+  try {
+    const jwtSecret =
+      process.env.JWT_SECRET ||
+      strapi.config.get("plugin::users-permissions.jwtSecret") ||
+      "default_jwt_secret";
+
+    const payload = jwt.verify(token, jwtSecret) as { id?: number };
+    if (!payload || !payload.id) return null;
+
+    const user = await strapi.db
+      .query("plugin::users-permissions.user")
+      .findOne({
+        where: { id: payload.id },
+        populate: { role: true },
+      });
+
+    return user;
+  } catch {
+    return null;
+  }
+}
 
 export default factories.createCoreController(
   "api::lesson-progress.lesson-progress",
   ({ strapi }) => ({
     async create(ctx) {
-      const user = ctx.state.user;
+      const user = await getAuthUser(ctx, strapi);
 
       if (!user) {
         return ctx.unauthorized("Authentication required");
       }
 
-      const { lesson, completed } = ctx.request.body.data;
+      if (user.blocked) {
+        return ctx.forbidden("Your account has been blocked by an administrator");
+      }
+
+      const { lesson, completed } = ctx.request.body.data || {};
 
       if (!lesson) {
         return ctx.badRequest("Lesson is required");
@@ -112,7 +162,7 @@ export default factories.createCoreController(
     },
 
     async myProgress(ctx) {
-      const user = ctx.state.user;
+      const user = await getAuthUser(ctx, strapi);
 
       if (!user) {
         return ctx.unauthorized("Authentication required");

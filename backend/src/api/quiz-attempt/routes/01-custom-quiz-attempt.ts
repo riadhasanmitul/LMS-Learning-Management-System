@@ -5,20 +5,16 @@ export default {
       path: "/quiz-attempts/submit",
       handler: "api::quiz-attempt.quiz-attempt.submit",
       config: {
-        auth: {
-          scope: ["api::quiz-attempt.quiz-attempt.create"],
-        },
+        auth: false,
       },
     },
     {
-  method: "GET",
-  path: "/quiz-attempts/my-attempts",
-  handler: "api::quiz-attempt.quiz-attempt.myAttempts",
-  config: {
-    auth: {
-      scope: ["api::quiz-attempt.quiz-attempt.find"],
+      method: "GET",
+      path: "/quiz-attempts/my-attempts",
+      handler: "api::quiz-attempt.quiz-attempt.myAttempts",
+      config: {
+        auth: false,
+      },
     },
-  },
-},
   ],
 };

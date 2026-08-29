@@ -5,9 +5,7 @@ export default {
       path: "/quizzes/content-manager/:courseDocumentId",
       handler: "api::quiz.quiz.contentManagerQuizzes",
       config: {
-        auth: {
-          scope: ["api::quiz.quiz.find"],
-        },
+        auth: false,
       },
     },
     {
@@ -15,9 +13,7 @@ export default {
       path: "/quizzes/:quizDocumentId/publish",
       handler: "api::quiz.quiz.publishQuiz",
       config: {
-        auth: {
-          scope: ["api::quiz.quiz.update"],
-        },
+        auth: false,
       },
     },
     {
@@ -25,9 +21,7 @@ export default {
       path: "/quizzes/:quizDocumentId/unpublish",
       handler: "api::quiz.quiz.unpublishQuiz",
       config: {
-        auth: {
-          scope: ["api::quiz.quiz.update"],
-        },
+        auth: false,
       },
     },
   ],

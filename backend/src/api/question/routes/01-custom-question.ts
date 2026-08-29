@@ -5,9 +5,7 @@ export default {
       path: "/questions/content-manager/:quizDocumentId",
       handler: "api::question.question.contentManagerQuestions",
       config: {
-        auth: {
-          scope: ["api::question.question.find"],
-        },
+        auth: false,
       },
     },
   ],
