@@ -137,7 +137,7 @@ export async function getInstructorQuizzes(
   const response = await api.get<{
     data: InstructorQuiz[];
   }>(
-    `/api/quizzes?filters[course][documentId][$eq]=${courseDocumentId}&status=draft`,
+    `/api/quizzes/content-manager/${courseDocumentId}`,
     {
       headers: {
         Authorization: `Bearer ${token}`,
