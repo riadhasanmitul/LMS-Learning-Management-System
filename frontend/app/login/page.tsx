@@ -14,6 +14,9 @@ export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [selectedRole, setSelectedRole] = useState<
+    "Student" | "Instructor" | "Content Manager" | "Admin"
+  >("Student");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -38,25 +41,37 @@ export default function LoginPage() {
       setAuthToken(authResult.jwt);
 
       const currentUser = await getCurrentUser(authResult.jwt);
-      const role = currentUser.role?.name || "Student";
+      const rawRole = currentUser.role?.name || selectedRole;
+
+      // Normalize role case-insensitively
+      const rawRoleLower = rawRole.toLowerCase();
+      let role: "Student" | "Instructor" | "Content Manager" | "Admin" = "Student";
+
+      if (rawRoleLower.includes("admin")) {
+        role = "Admin";
+      } else if (rawRoleLower.includes("content")) {
+        role = "Content Manager";
+      } else if (rawRoleLower.includes("instructor")) {
+        role = "Instructor";
+      } else {
+        role = "Student";
+      }
 
       localStorage.setItem("jwt", authResult.jwt);
       localStorage.setItem("user", JSON.stringify(currentUser));
       localStorage.setItem("role", role);
 
       switch (role) {
-        case "Student":
-          router.push("/student");
-          break;
-        case "Instructor":
-          router.push("/instructor");
+        case "Admin":
+          router.push("/admin");
           break;
         case "Content Manager":
           router.push("/content-manager");
           break;
-        case "Admin":
-          router.push("/admin");
+        case "Instructor":
+          router.push("/instructor");
           break;
+        case "Student":
         default:
           router.push("/student");
           break;
@@ -77,7 +92,7 @@ export default function LoginPage() {
         return;
       }
 
-      setError("Invalid credentials or registration failed.");
+      setError("Invalid credentials or authentication failed.");
     } finally {
       setLoading(false);
     }
@@ -180,7 +195,7 @@ export default function LoginPage() {
                     : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
                 }`}
               >
-                Register Student
+                Register
               </button>
             </div>
 
@@ -192,7 +207,7 @@ export default function LoginPage() {
               <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
                 {mode === "login"
                   ? "Sign in to your CPS LMS account."
-                  : "Register a new Student account to start learning."}
+                  : "Register a new user account on CPS LMS."}
               </p>
             </div>
 
@@ -210,29 +225,59 @@ export default function LoginPage() {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   required
-                  placeholder={mode === "login" ? "Enter username or email" : "Choose a username"}
+                  placeholder={mode === "login" ? "Enter username or email" : "e.g. admin or student1"}
                   className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500"
                 />
               </div>
 
               {mode === "register" && (
-                <div>
-                  <label
-                    htmlFor="email"
-                    className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300"
-                  >
-                    Email Address
-                  </label>
-                  <input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    placeholder="student@example.com"
-                    className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500"
-                  />
-                </div>
+                <>
+                  <div>
+                    <label
+                      htmlFor="email"
+                      className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300"
+                    >
+                      Email Address
+                    </label>
+                    <input
+                      id="email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      placeholder="user@example.com"
+                      className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="roleSelect"
+                      className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300"
+                    >
+                      Account Role
+                    </label>
+                    <select
+                      id="roleSelect"
+                      value={selectedRole}
+                      onChange={(e) =>
+                        setSelectedRole(
+                          e.target.value as
+                            | "Student"
+                            | "Instructor"
+                            | "Content Manager"
+                            | "Admin"
+                        )
+                      }
+                      className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
+                    >
+                      <option value="Student">Student</option>
+                      <option value="Instructor">Instructor</option>
+                      <option value="Content Manager">Content Manager</option>
+                      <option value="Admin">Admin</option>
+                    </select>
+                  </div>
+                </>
               )}
 
               <div>
@@ -270,7 +315,7 @@ export default function LoginPage() {
                     : "Creating Account..."
                   : mode === "login"
                   ? "Sign In"
-                  : "Register Student Account"}
+                  : `Register Account`}
               </button>
             </form>
 
@@ -284,7 +329,7 @@ export default function LoginPage() {
                       onClick={() => setMode("register")}
                       className="font-semibold text-blue-600 hover:underline dark:text-blue-400"
                     >
-                      Register as Student
+                      Create Account
                     </button>
                   </>
                 ) : (
