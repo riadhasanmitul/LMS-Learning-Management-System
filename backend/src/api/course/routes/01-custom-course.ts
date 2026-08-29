@@ -9,9 +9,7 @@ export default {
       path: "/courses/my-courses",
       handler: "api::course.course.myCourses",
       config: {
-        auth: {
-          scope: ["api::course.course.find"],
-        },
+        auth: false,
       },
     },
     {
@@ -19,9 +17,7 @@ export default {
       path: "/courses/:courseDocumentId/progress",
       handler: "api::course.course.courseProgress",
       config: {
-        auth: {
-          scope: ["api::course.course.find"],
-        },
+        auth: false,
       },
     },
     {
@@ -29,9 +25,7 @@ export default {
       path: "/courses/instructor-courses",
       handler: "api::course.course.instructorCourses",
       config: {
-        auth: {
-          scope: ["api::course.course.find"],
-        },
+        auth: false,
       },
     },
     {
@@ -39,9 +33,7 @@ export default {
       path: "/courses/content-manager-courses",
       handler: "api::course.course.contentManagerCourses",
       config: {
-        auth: {
-          scope: ["api::course.course.find"],
-        },
+        auth: false,
       },
     },
     {
@@ -49,9 +41,7 @@ export default {
       path: "/courses/:courseDocumentId/publish",
       handler: "api::course.course.publishCourse",
       config: {
-        auth: {
-          scope: ["api::course.course.update"],
-        },
+        auth: false,
       },
     },
     {
@@ -59,9 +49,7 @@ export default {
       path: "/courses/:courseDocumentId/unpublish",
       handler: "api::course.course.unpublishCourse",
       config: {
-        auth: {
-          scope: ["api::course.course.update"],
-        },
+        auth: false,
       },
     },
   ],

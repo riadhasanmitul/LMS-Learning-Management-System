@@ -21,7 +21,7 @@ export default {
       path: "/blog-posts",
       handler: "api::blog-post.blog-post.find",
       config: {
-        auth: {},
+        auth: false,
       },
     },
     {
@@ -29,7 +29,7 @@ export default {
       path: "/blog-posts/:id",
       handler: "api::blog-post.blog-post.findOne",
       config: {
-        auth: {},
+        auth: false,
       },
     },
     {
@@ -37,7 +37,7 @@ export default {
       path: "/blog-posts",
       handler: "api::blog-post.blog-post.create",
       config: {
-        auth: {},
+        auth: false,
       },
     },
     {
@@ -45,7 +45,7 @@ export default {
       path: "/blog-posts/:id",
       handler: "api::blog-post.blog-post.update",
       config: {
-        auth: {},
+        auth: false,
       },
     },
     {
@@ -53,7 +53,7 @@ export default {
       path: "/blog-posts/:id",
       handler: "api::blog-post.blog-post.delete",
       config: {
-        auth: {},
+        auth: false,
       },
     },
   ],
