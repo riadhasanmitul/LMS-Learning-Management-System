@@ -102,14 +102,14 @@ export default factories.createCoreController(
         return ctx.forbidden("You cannot create lessons");
       }
 
-      const lesson = ctx.request.body?.data;
+      const lessonData = ctx.request.body?.data;
 
-      if (!lesson?.course) {
+      if (!lessonData?.course) {
         return ctx.badRequest("Course is required");
       }
 
       const course = await strapi.documents("api::course.course").findOne({
-        documentId: lesson.course,
+        documentId: lessonData.course,
         populate: ["instructor"],
       });
 
@@ -121,7 +121,22 @@ export default factories.createCoreController(
         return ctx.forbidden("You can only add lessons to your own courses");
       }
 
-      return await super.create(ctx);
+      const createdLesson = await strapi
+        .documents("api::lesson.lesson")
+        .create({
+          data: {
+            title: lessonData.title,
+            content: lessonData.content || [],
+            videoUrl: lessonData.videoUrl || null,
+            order: Number(lessonData.order) || 1,
+            course: course.documentId,
+          },
+          status: "draft",
+        });
+
+      return {
+        data: createdLesson,
+      };
     },
 
     async update(ctx) {
@@ -156,7 +171,24 @@ export default factories.createCoreController(
         return ctx.forbidden("You can only update lessons in your own courses");
       }
 
-      return await super.update(ctx);
+      const bodyData = ctx.request.body?.data || {};
+
+      const updatedLesson = await strapi
+        .documents("api::lesson.lesson")
+        .update({
+          documentId,
+          data: {
+            ...(bodyData.title !== undefined ? { title: bodyData.title } : {}),
+            ...(bodyData.content !== undefined ? { content: bodyData.content } : {}),
+            ...(bodyData.videoUrl !== undefined ? { videoUrl: bodyData.videoUrl } : {}),
+            ...(bodyData.order !== undefined ? { order: Number(bodyData.order) } : {}),
+          },
+          status: "draft",
+        });
+
+      return {
+        data: updatedLesson,
+      };
     },
 
     async delete(ctx) {
@@ -191,7 +223,13 @@ export default factories.createCoreController(
         return ctx.forbidden("You can only delete lessons in your own courses");
       }
 
-      return await super.delete(ctx);
+      await strapi.documents("api::lesson.lesson").delete({
+        documentId,
+      });
+
+      return {
+        data: { message: "Lesson deleted successfully", documentId },
+      };
     },
 
     async courseLessons(ctx) {
