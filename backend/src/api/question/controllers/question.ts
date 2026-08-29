@@ -85,6 +85,40 @@ async function getUserRole(strapi: any, user: any): Promise<string> {
 export default factories.createCoreController(
   "api::question.question",
   ({ strapi }) => ({
+    async findOne(ctx) {
+      const user = await getAuthUser(ctx, strapi);
+
+      if (!user) {
+        return ctx.unauthorized("Authentication required");
+      }
+
+      const documentId = ctx.params.id;
+
+      const question = await strapi
+        .documents("api::question.question")
+        .findOne({
+          documentId,
+          status: "draft",
+        });
+
+      if (!question) {
+        const publishedQuestion = await strapi
+          .documents("api::question.question")
+          .findOne({
+            documentId,
+            status: "published",
+          });
+
+        if (!publishedQuestion) {
+          return ctx.notFound("Question not found");
+        }
+
+        return { data: publishedQuestion };
+      }
+
+      return { data: question };
+    },
+
     async create(ctx) {
       const user = await getAuthUser(ctx, strapi);
 
