@@ -33,28 +33,36 @@ export default {
         }
       }
 
-      // 2. Automatically assign Admin role to any user named 'admin' or with 'admin' email if they exist
-      const adminRole = await strapi.db
-        .query("plugin::users-permissions.role")
-        .findOne({ where: { name: "Admin" } });
+      // 2. Automatically assign roles based on username / email during bootstrap
+      const roleMap = [
+        { roleName: "Admin", pattern: "%admin%" },
+        { roleName: "Content Manager", pattern: "%content%" },
+        { roleName: "Instructor", pattern: "%instructor%" },
+      ];
 
-      if (adminRole) {
-        const adminUsers = await strapi.db
-          .query("plugin::users-permissions.user")
-          .findMany({
-            where: {
-              $or: [
-                { username: { $iLike: "%admin%" } },
-                { email: { $iLike: "%admin%" } },
-              ],
-            },
-          });
+      for (const { roleName, pattern } of roleMap) {
+        const roleRecord = await strapi.db
+          .query("plugin::users-permissions.role")
+          .findOne({ where: { name: roleName } });
 
-        for (const user of adminUsers) {
-          await strapi.db.query("plugin::users-permissions.user").update({
-            where: { id: user.id },
-            data: { role: adminRole.id },
-          });
+        if (roleRecord) {
+          const matchedUsers = await strapi.db
+            .query("plugin::users-permissions.user")
+            .findMany({
+              where: {
+                $or: [
+                  { username: { $iLike: pattern } },
+                  { email: { $iLike: pattern } },
+                ],
+              },
+            });
+
+          for (const u of matchedUsers) {
+            await strapi.db.query("plugin::users-permissions.user").update({
+              where: { id: u.id },
+              data: { role: roleRecord.id },
+            });
+          }
         }
       }
 

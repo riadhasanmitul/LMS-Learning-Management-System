@@ -252,13 +252,26 @@ export default factories.createCoreController(
           .findOne({ where: { name: "Student" } });
       }
 
+      let hashedPassword = password;
+      try {
+        const bcrypt = require("bcryptjs");
+        hashedPassword = await bcrypt.hash(password, 10);
+      } catch {
+        try {
+          const bcrypt = require("bcrypt");
+          hashedPassword = await bcrypt.hash(password, 10);
+        } catch {
+          hashedPassword = password;
+        }
+      }
+
       const newUser = await strapi.db
         .query("plugin::users-permissions.user")
         .create({
           data: {
             username,
             email,
-            password,
+            password: hashedPassword,
             confirmed: true,
             blocked: false,
             role: targetRole?.id,
