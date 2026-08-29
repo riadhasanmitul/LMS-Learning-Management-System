@@ -124,7 +124,7 @@ export default function CoursesPage() {
 
             <div>
               <div className="text-base font-bold text-slate-900">
-                CPS LMS
+                LMS
               </div>
 
               <div className="text-[11px] text-slate-400">
@@ -155,7 +155,7 @@ export default function CoursesPage() {
 
           <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-400 md:text-base">
             Discover courses, build new skills, and continue your
-            learning journey with CPS LMS.
+            learning journey with LMS.
           </p>
         </section>
 
@@ -235,7 +235,7 @@ export default function CoursesPage() {
 
                       <div className="mt-5 flex items-center justify-between pt-2">
                         <span className="text-xs text-slate-400">
-                          CPS LMS
+                          LMS
                         </span>
 
                         <span className="text-sm font-semibold text-blue-600">

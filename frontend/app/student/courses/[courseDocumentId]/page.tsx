@@ -194,7 +194,7 @@ export default function CourseDetailsPage() {
             </div>
 
             <div className="text-base font-bold text-slate-900 dark:text-white">
-              CPS LMS
+              LMS
             </div>
           </Link>
 
@@ -275,7 +275,7 @@ export default function CourseDetailsPage() {
                 </div>
 
                 <p className="mt-4 text-sm font-medium text-slate-400">
-                  CPS LMS Course
+                  LMS Course
                 </p>
               </div>
             </div>

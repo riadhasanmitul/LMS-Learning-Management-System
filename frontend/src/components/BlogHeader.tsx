@@ -32,7 +32,7 @@ export function BlogHeader() {
           <div>
             <div className="flex items-center gap-2">
               <span className="font-bold tracking-tight text-slate-900 dark:text-slate-100">
-                CPS LMS
+                LMS
               </span>
               <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold tracking-wide uppercase text-blue-600 border border-blue-200/60 dark:bg-blue-950/60 dark:border-blue-800/60 dark:text-blue-400">
                 Blog

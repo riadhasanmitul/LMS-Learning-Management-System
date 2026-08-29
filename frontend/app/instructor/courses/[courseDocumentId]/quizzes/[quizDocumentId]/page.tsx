@@ -201,7 +201,7 @@ export default function EditQuizPage() {
             href="/instructor"
             className="font-bold text-slate-900"
           >
-            CPS LMS
+            LMS
           </Link>
 
           <Link

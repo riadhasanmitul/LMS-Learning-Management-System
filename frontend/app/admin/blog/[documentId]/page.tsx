@@ -341,7 +341,7 @@ export default function EditAdminBlogPage() {
             href="/admin"
             className="font-bold text-slate-900"
           >
-            CPS LMS
+            LMS
           </Link>
 
           <Link

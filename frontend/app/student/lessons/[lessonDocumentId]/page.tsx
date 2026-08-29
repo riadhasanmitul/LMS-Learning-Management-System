@@ -143,7 +143,7 @@ export default function LessonViewerPage() {
             </div>
 
             <span className="text-base font-bold text-slate-900">
-              CPS LMS
+              LMS
             </span>
           </Link>
 

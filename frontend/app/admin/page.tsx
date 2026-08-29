@@ -129,7 +129,7 @@ export default function AdminDashboard() {
 
             <div>
               <div className="font-bold text-slate-900 dark:text-white">
-                CPS LMS
+                LMS
               </div>
 
               <div className="text-[11px] text-slate-400">

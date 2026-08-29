@@ -11,7 +11,7 @@ export default function Home() {
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 font-bold text-white">
               C
             </div>
-            <span className="font-bold text-slate-900 dark:text-white">CPS LMS</span>
+            <span className="font-bold text-slate-900 dark:text-white">LMS</span>
           </div>
 
           <nav className="flex items-center gap-4">
@@ -108,7 +108,7 @@ export default function Home() {
       <footer className="border-t border-slate-200 bg-white py-8">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6">
           <span className="text-sm text-slate-400">
-            © 2026 CPS LMS. All rights reserved.
+            © 2026 LMS. All rights reserved.
           </span>
 
           <div className="flex gap-5">

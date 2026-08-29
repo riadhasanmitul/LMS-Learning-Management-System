@@ -189,7 +189,7 @@ export default async function BlogPostPage({
               </div>
               <div>
                 <p className="text-sm font-bold text-slate-900">
-                  {post.author?.name ?? "CPS LMS Team"}
+                  {post.author?.name ?? "LMS Team"}
                 </p>
                 <p className="text-xs text-slate-500">Author & Contributor</p>
               </div>
@@ -197,7 +197,7 @@ export default async function BlogPostPage({
 
             <div className="text-right text-xs text-slate-500">
               <p className="font-medium text-slate-700">{formattedDate}</p>
-              <p className="text-[11px] text-slate-400">CPS LMS Knowledge Base</p>
+              <p className="text-[11px] text-slate-400">LMS Knowledge Base</p>
             </div>
           </div>
         </header>
@@ -233,10 +233,10 @@ export default async function BlogPostPage({
             </div>
             <div className="text-center sm:text-left">
               <h3 className="text-base font-bold text-white">
-                Written by {post.author?.name ?? "CPS LMS Team"}
+                Written by {post.author?.name ?? "LMS Team"}
               </h3>
               <p className="mt-1 text-xs text-slate-300">
-                Course contributor & educator at CPS Learning Management System.
+                Course contributor & educator at Learning Management System.
               </p>
             </div>
           </div>

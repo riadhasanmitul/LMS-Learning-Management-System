@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CPS LMS — Learning Management System",
+  title: "LMS — Learning Management System",
   description: "Learn at your own pace with courses, lessons, and auto-graded quizzes.",
 };
 

@@ -114,7 +114,7 @@ export default function LoginPage() {
                   C
                 </div>
                 <span className="text-xl font-semibold text-white">
-                  CPS LMS
+                  LMS
                 </span>
               </div>
 
@@ -148,7 +148,7 @@ export default function LoginPage() {
             </div>
 
             <p className="text-sm text-slate-500">
-              CPS LMS • Learning made simpler
+              LMS • Learning made simpler
             </p>
           </div>
         </section>
@@ -163,7 +163,7 @@ export default function LoginPage() {
                   C
                 </div>
                 <span className="text-xl font-semibold text-slate-900 dark:text-white">
-                  CPS LMS
+                  LMS
                 </span>
               </div>
               <ThemeToggle />
@@ -208,8 +208,8 @@ export default function LoginPage() {
 
               <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
                 {mode === "login"
-                  ? "Sign in to your CPS LMS account."
-                  : "Register a new user account on CPS LMS."}
+                  ? "Sign in to your LMS account."
+                  : "Register a new user account on LMS."}
               </p>
             </div>
 

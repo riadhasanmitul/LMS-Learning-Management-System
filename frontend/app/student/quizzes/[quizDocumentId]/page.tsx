@@ -178,7 +178,7 @@ export default function QuizPage() {
             </div>
 
             <span className="text-base font-bold text-slate-900">
-              CPS LMS
+              LMS
             </span>
           </Link>
 

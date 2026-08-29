@@ -1,4 +1,4 @@
-# CPS LMS — Learning Management System
+# LMS — Learning Management System
 
 A full-stack Learning Management System built with **Next.js** (frontend) and **Strapi v5** (backend), featuring four distinct user roles, progress tracking, quiz auto-grading, blog management, and an admin panel.
 

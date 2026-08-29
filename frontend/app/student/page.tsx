@@ -131,7 +131,7 @@ export default function StudentDashboard() {
 
             <div>
               <div className="text-base font-bold text-slate-900 dark:text-white">
-                CPS LMS
+                LMS
               </div>
 
               <div className="text-[11px] text-slate-400">
@@ -384,7 +384,7 @@ function CourseCard({
       <div className="relative h-40 shrink-0 overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900">
         <div className="flex h-full items-center justify-center">
           <span className="text-sm font-medium text-slate-400 dark:text-slate-500">
-            CPS LMS
+            LMS
           </span>
         </div>
 

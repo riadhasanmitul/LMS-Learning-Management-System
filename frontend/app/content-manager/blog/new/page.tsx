@@ -98,7 +98,7 @@ export default function CreateBlogPostPage() {
             href="/content-manager"
             className="font-bold text-slate-900"
           >
-            CPS LMS
+            LMS
           </Link>
 
           <Link

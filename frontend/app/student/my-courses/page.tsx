@@ -98,7 +98,7 @@ export default function MyCoursesPage() {
 
             <div>
               <div className="text-base font-bold text-slate-900">
-                CPS LMS
+                LMS
               </div>
 
               <div className="text-[11px] text-slate-400">
@@ -200,7 +200,7 @@ export default function MyCoursesPage() {
 
                     <div className="mt-5 flex items-center justify-between pt-2">
                       <span className="text-xs text-slate-400">
-                        CPS LMS
+                        LMS
                       </span>
 
                       <span className="text-sm font-semibold text-blue-600">

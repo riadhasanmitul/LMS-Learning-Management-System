@@ -27,7 +27,7 @@ export default {
             data: {
               name,
               type,
-              description: `${name} role for CPS LMS`,
+              description: `${name} role for LMS`,
             },
           });
         }

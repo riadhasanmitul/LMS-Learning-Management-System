@@ -93,7 +93,7 @@ export default function QuizResultsPage() {
             </div>
 
             <span className="font-bold text-slate-900">
-              CPS LMS
+              LMS
             </span>
           </Link>
 

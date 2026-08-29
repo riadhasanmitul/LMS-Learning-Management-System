@@ -85,7 +85,7 @@ export default async function BlogPage() {
             </h1>
 
             <p className="mt-4 text-base leading-7 text-slate-400 md:text-lg">
-              Explore the latest insights, tutorials, and course updates from the CPS LMS team.
+              Explore the latest insights, tutorials, and course updates from the LMS team.
             </p>
 
             <div className="mt-6 flex flex-wrap items-center gap-6 text-xs text-slate-400">
@@ -164,7 +164,7 @@ export default async function BlogPage() {
                   <div>
                     <div className="flex items-center gap-3 text-xs text-slate-400">
                       <span className="font-semibold text-blue-600">
-                        {featuredPost.author?.name ?? "CPS LMS Team"}
+                        {featuredPost.author?.name ?? "LMS Team"}
                       </span>
                       <span>•</span>
                       <span>{formatDate(featuredPost.publishedAt)}</span>
@@ -187,7 +187,7 @@ export default async function BlogPage() {
                         {getInitials(featuredPost.author?.name)}
                       </div>
                       <span className="text-xs font-medium text-slate-700">
-                        {featuredPost.author?.name ?? "CPS LMS Author"}
+                        {featuredPost.author?.name ?? "LMS Author"}
                       </span>
                     </div>
 
@@ -242,7 +242,7 @@ export default async function BlogPage() {
                         <div>
                           <div className="flex items-center gap-2 text-xs text-slate-400">
                             <span className="font-semibold text-blue-600">
-                              {post.author?.name ?? "CPS LMS"}
+                              {post.author?.name ?? "LMS"}
                             </span>
                             <span>•</span>
                             <span>{formatDate(post.publishedAt)}</span>
