@@ -311,14 +311,30 @@ export default factories.createCoreController(
 
       const quizDocumentId = ctx.params.quizDocumentId;
 
-      const quiz = await strapi
+      let quiz = await strapi
         .documents("api::quiz.quiz")
         .findOne({
           documentId: quizDocumentId,
+          populate: ["course", "course.instructor"],
+          status: "draft",
         });
 
       if (!quiz) {
+        quiz = await strapi
+          .documents("api::quiz.quiz")
+          .findOne({
+            documentId: quizDocumentId,
+            populate: ["course", "course.instructor"],
+            status: "published",
+          });
+      }
+
+      if (!quiz) {
         return ctx.notFound("Quiz not found");
+      }
+
+      if (role === "Instructor" && quiz.course?.instructor?.id !== user.id) {
+        return ctx.forbidden("You can only access questions for your own quizzes");
       }
 
       const questions = await strapi
@@ -329,6 +345,7 @@ export default factories.createCoreController(
               documentId: quizDocumentId,
             },
           },
+          status: "draft",
           sort: ["createdAt:asc"],
         });
 

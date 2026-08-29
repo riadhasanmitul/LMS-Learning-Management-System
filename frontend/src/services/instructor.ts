@@ -223,7 +223,7 @@ export async function getQuizQuestions(
   const response = await api.get<{
     data: InstructorQuestion[];
   }>(
-    `/api/questions?filters[quiz][documentId][$eq]=${quizDocumentId}&status=draft`,
+    `/api/questions/content-manager/${quizDocumentId}`,
     {
       headers: {
         Authorization: `Bearer ${token}`,
