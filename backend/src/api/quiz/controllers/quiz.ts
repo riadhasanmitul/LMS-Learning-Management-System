@@ -149,6 +149,7 @@ export default factories.createCoreController(
         .findOne({
           documentId: body.course,
           populate: ["instructor"],
+          status: "draft",
         });
 
       if (!course) {
@@ -198,12 +199,23 @@ export default factories.createCoreController(
 
       const documentId = ctx.params.id;
 
-      const quiz = await strapi
+      let quiz = await strapi
         .documents("api::quiz.quiz")
         .findOne({
           documentId,
           populate: ["course", "course.instructor"],
+          status: "draft",
         });
+
+      if (!quiz) {
+        quiz = await strapi
+          .documents("api::quiz.quiz")
+          .findOne({
+            documentId,
+            populate: ["course", "course.instructor"],
+            status: "published",
+          });
+      }
 
       if (!quiz) {
         return ctx.notFound("Quiz not found");
@@ -256,12 +268,23 @@ export default factories.createCoreController(
 
       const documentId = ctx.params.id;
 
-      const quiz = await strapi
+      let quiz = await strapi
         .documents("api::quiz.quiz")
         .findOne({
           documentId,
           populate: ["course", "course.instructor"],
+          status: "draft",
         });
+
+      if (!quiz) {
+        quiz = await strapi
+          .documents("api::quiz.quiz")
+          .findOne({
+            documentId,
+            populate: ["course", "course.instructor"],
+            status: "published",
+          });
+      }
 
       if (!quiz) {
         return ctx.notFound("Quiz not found");
@@ -304,17 +327,27 @@ export default factories.createCoreController(
 
       const courseDocumentId = ctx.params.courseDocumentId;
 
-      const course = await strapi
+      let course = await strapi
         .documents("api::course.course")
         .findOne({
           documentId: courseDocumentId,
+          status: "draft",
         });
+
+      if (!course) {
+        course = await strapi
+          .documents("api::course.course")
+          .findOne({
+            documentId: courseDocumentId,
+            status: "published",
+          });
+      }
 
       if (!course) {
         return ctx.notFound("Course not found");
       }
 
-      const quizzes = await strapi
+      const draftQuizzes = await strapi
         .documents("api::quiz.quiz")
         .findMany({
           filters: {
@@ -326,8 +359,29 @@ export default factories.createCoreController(
           sort: ["createdAt:desc"],
         });
 
+      const publishedQuizzes = await strapi
+        .documents("api::quiz.quiz")
+        .findMany({
+          filters: {
+            course: {
+              documentId: courseDocumentId,
+            },
+          },
+          status: "published",
+        });
+
+      const publishedMap = new Map<string, string>();
+      for (const p of publishedQuizzes) {
+        publishedMap.set(p.documentId, String(p.publishedAt || new Date().toISOString()));
+      }
+
+      const result = draftQuizzes.map((q) => ({
+        ...q,
+        publishedAt: publishedMap.get(q.documentId) || null,
+      }));
+
       return {
-        data: quizzes,
+        data: result,
       };
     },
 

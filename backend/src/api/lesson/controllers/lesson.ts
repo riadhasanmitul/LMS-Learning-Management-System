@@ -333,7 +333,7 @@ export default factories.createCoreController(
         return ctx.forbidden("You can only manage lessons in your own courses");
       }
 
-      const lessons = await strapi.documents("api::lesson.lesson").findMany({
+      const draftLessons = await strapi.documents("api::lesson.lesson").findMany({
         filters: {
           course: {
             documentId: courseDocumentId,
@@ -343,8 +343,27 @@ export default factories.createCoreController(
         sort: ["order:asc"],
       });
 
+      const publishedLessons = await strapi.documents("api::lesson.lesson").findMany({
+        filters: {
+          course: {
+            documentId: courseDocumentId,
+          },
+        },
+        status: "published",
+      });
+
+      const publishedMap = new Map<string, string>();
+      for (const p of publishedLessons) {
+        publishedMap.set(p.documentId, String(p.publishedAt || new Date().toISOString()));
+      }
+
+      const result = draftLessons.map((l) => ({
+        ...l,
+        publishedAt: publishedMap.get(l.documentId) || null,
+      }));
+
       return {
-        data: lessons,
+        data: result,
       };
     },
 
@@ -363,17 +382,27 @@ export default factories.createCoreController(
 
       const courseDocumentId = ctx.params.courseDocumentId;
 
-      const course = await strapi
+      let course = await strapi
         .documents("api::course.course")
         .findOne({
           documentId: courseDocumentId,
+          status: "draft",
         });
+
+      if (!course) {
+        course = await strapi
+          .documents("api::course.course")
+          .findOne({
+            documentId: courseDocumentId,
+            status: "published",
+          });
+      }
 
       if (!course) {
         return ctx.notFound("Course not found");
       }
 
-      const lessons = await strapi
+      const draftLessons = await strapi
         .documents("api::lesson.lesson")
         .findMany({
           filters: {
@@ -385,8 +414,29 @@ export default factories.createCoreController(
           sort: ["order:asc"],
         });
 
+      const publishedLessons = await strapi
+        .documents("api::lesson.lesson")
+        .findMany({
+          filters: {
+            course: {
+              documentId: courseDocumentId,
+            },
+          },
+          status: "published",
+        });
+
+      const publishedMap = new Map<string, string>();
+      for (const p of publishedLessons) {
+        publishedMap.set(p.documentId, String(p.publishedAt || new Date().toISOString()));
+      }
+
+      const result = draftLessons.map((l) => ({
+        ...l,
+        publishedAt: publishedMap.get(l.documentId) || null,
+      }));
+
       return {
-        data: lessons,
+        data: result,
       };
     },
 
